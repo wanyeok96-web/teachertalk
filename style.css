@@ -353,21 +353,27 @@ textarea {
   align-items: center;
 }
 
-.teacher-session-line {
-  margin: 8px 0 0;
-  color: var(--ink-800);
-  font-size: 1.12rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1.45;
+.teacher-session-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.teacher-session-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.teacher-info-card--session {
+  margin-top: 0;
 }
 
 .teacher-session-line[hidden] {
   display: none !important;
-}
-
-.teacher-session-hint {
-  margin-top: 6px;
 }
 
 .teacher-session-actions {
@@ -384,18 +390,35 @@ textarea {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  min-height: 44px;
-  padding: 10px 16px;
+  min-height: 60px;
+  padding: 12px 18px;
   border-radius: 12px;
   font-weight: 900;
 }
 
 .teacher-schedule-card-head {
-  align-items: flex-start;
+  align-items: center;
 }
 
 .teacher-schedule-card-head .teacher-schedule-refresh-btn {
   margin-top: 4px;
+}
+
+.teacher-schedule-head-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.teacher-schedule-print-btn {
+  min-height: 44px;
+  min-width: 96px;
+  border-radius: 12px;
+  font-size: 0.86rem;
 }
 
 .submit-block--inline {
@@ -410,6 +433,7 @@ textarea {
 }
 
 .teacher-schedule-layout--card {
+  grid-template-columns: 1fr;
   gap: 14px;
 }
 
@@ -424,6 +448,95 @@ textarea {
 .teacher-schedule-detail-card--embedded {
   margin-top: 14px;
   border-radius: var(--radius-2xl);
+}
+
+.teacher-detail-actions {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.teacher-detail-modal-card {
+  width: min(860px, 100%);
+}
+
+.teacher-detail-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 34px; /* close button space */
+}
+
+.teacher-detail-modal-head__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.teacher-detail-save-btn {
+  min-width: 116px;
+  white-space: nowrap;
+}
+
+.teacher-detail-modal-foot {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.teacher-detail-actions__left,
+.teacher-detail-actions__right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-ghost--sm {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.btn-primary--xs {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.btn-danger {
+  border-color: rgba(220, 38, 38, 0.26) !important;
+  color: #b91c1c !important;
+}
+
+.btn-danger:hover {
+  border-color: rgba(220, 38, 38, 0.4) !important;
+  background: rgba(254, 226, 226, 0.6) !important;
+}
+
+.teacher-delete-preview {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  background: rgba(254, 242, 242, 0.7);
+  color: var(--ink-800);
+  font-weight: 900;
+  font-size: 0.9rem;
 }
 
 .modal-backdrop {
@@ -536,9 +649,10 @@ textarea {
 }
 
 .teacher-setting-remove-date {
-  margin: 6px 0 12px;
-  min-height: 44px;
-  font-size: 0.88rem;
+  margin: 0;
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
 }
 
 .teacher-settings-lock-hint {
@@ -564,6 +678,12 @@ textarea {
 .teacher-schedule-layout {
   display: grid;
   grid-template-columns: 1.25fr 1fr;
+  gap: 12px;
+}
+
+/* 상담 일정 관리 카드: 분할 제거 + 달력 전체폭 */
+.teacher-schedule-layout.teacher-schedule-layout--card {
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -606,7 +726,7 @@ textarea {
 }
 
 .teacher-schedule-day {
-  min-height: 64px;
+  min-height: 120px;
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 10px;
   background: #fff;
@@ -615,7 +735,7 @@ textarea {
   display: grid;
   gap: 4px;
   align-content: start;
-  cursor: pointer;
+  cursor: default;
 }
 
 .teacher-schedule-day.is-outside {
@@ -643,6 +763,43 @@ textarea {
   font-weight: 800;
 }
 
+.teacher-schedule-day__items {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.teacher-schedule-entry {
+  width: 100%;
+  text-align: left;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(248, 250, 252, 0.9);
+  color: var(--ink-800);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.teacher-schedule-entry:hover {
+  border-color: rgba(20, 184, 166, 0.45);
+  background: rgba(240, 253, 250, 0.85);
+}
+
+.teacher-schedule-entry.is-selected {
+  border-color: rgba(15, 118, 110, 0.7);
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.12), rgba(45, 212, 191, 0.18));
+}
+
+.teacher-schedule-entry.is-done {
+  opacity: 0.55;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(15, 23, 42, 0.35);
+}
+
 .teacher-schedule-list-title {
   margin: 0 0 8px;
   color: var(--ink-800);
@@ -655,6 +812,17 @@ textarea {
   min-width: 96px;
   border-radius: 12px;
   font-size: 0.86rem;
+}
+
+.btn-ghost--xs {
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+}
+
+.field__row--inline-actions {
+  align-items: center;
 }
 
 .teacher-schedule-list-hint {
@@ -1118,6 +1286,155 @@ textarea {
   grid-template-columns: minmax(0, 1fr) 180px;
   gap: 12px;
   align-items: end;
+}
+
+.legacy-step2-controls {
+  display: none !important;
+}
+
+.student-calendar-accordion {
+  display: grid;
+  gap: 10px;
+}
+
+.student-calendar-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.student-calendar-panel[hidden] {
+  display: none !important;
+}
+
+.student-calendar-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.student-time-panel {
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px;
+  min-height: 320px;
+}
+
+.student-time-panel__title {
+  margin: 0 0 10px;
+  color: var(--ink-800);
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.student-time-panel__slots {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.student-time-group {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.student-time-group:last-child {
+  margin-bottom: 0;
+}
+
+.student-time-group__title {
+  margin: 0;
+  color: var(--mint-900);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.student-time-group__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.student-calendar__grid {
+  align-items: start;
+}
+
+.student-calendar-day {
+  min-height: 64px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 12px;
+  background: #fff;
+  padding: 7px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+}
+
+.student-calendar-day.is-available {
+  background: linear-gradient(180deg, rgba(204, 251, 241, 0.75), rgba(240, 253, 250, 0.85));
+  border-color: rgba(20, 184, 166, 0.26);
+}
+
+.student-calendar-day.is-outside {
+  opacity: 0.35;
+}
+
+.student-calendar-day.is-disabled {
+  opacity: 0.45;
+}
+
+.student-calendar-day.is-selected {
+  border-color: rgba(15, 118, 110, 0.72);
+  background: rgba(236, 253, 245, 0.9);
+}
+
+.student-calendar-day__num {
+  color: var(--ink-800);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.student-slot-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 184, 166, 0.26);
+  background: rgba(240, 253, 250, 0.65);
+  color: var(--mint-900);
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.student-slot-btn:hover {
+  border-color: rgba(20, 184, 166, 0.45);
+  background: rgba(240, 253, 250, 0.9);
+}
+
+.student-slot-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.student-slot-btn.is-selected {
+  border-color: rgba(15, 118, 110, 0.85);
+  background: linear-gradient(135deg, #0d9488, #2dd4bf);
+  color: #fff;
+}
+
+.student-calendar-selection {
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .student-calendar-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .schedule-query-row .input-wrap,
@@ -2008,6 +2325,10 @@ textarea:focus {
 }
 
 #saveTeacherSettingsBtn.is-loading .btn-primary__icon {
+  animation: spin 1s linear infinite;
+}
+
+#teacherAuthSubmitBtn.is-loading .btn-primary__icon {
   animation: spin 1s linear infinite;
 }
 

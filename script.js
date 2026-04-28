@@ -1,4 +1,4 @@
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycnGLBV0V8C0OIapIWoOkIqV1nIgZomLQzcRrW3mTL_HtLhFZFRFshuqe2FTwivHMw/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-b22QoFKlv7DHjz-6bIGuIE_u2pyjFVqbn-vKHchSJdBo8LhBmQnC3v7GeK2n4p23/exec";
 const CONFIG = getSchoolConfig();
 const HOMEROOM_TEACHERS = CONFIG.classes;
 const TIME_SLOTS = [
@@ -38,10 +38,13 @@ const mainPanelTeacher = document.querySelector("#mainPanelTeacher");
 const teacherLoginPanel = document.querySelector("#teacherPanelAuth");
 const teacherDashboardEl = document.querySelector("#teacherPanelDashboard");
 const teacherAuthSubmitBtn = document.querySelector("#teacherAuthSubmitBtn");
+const teacherAuthSubmitBtnText = document.querySelector("#teacherAuthSubmitBtnText");
 const teacherLoginIdInput = document.querySelector("#teacherLoginIdInput");
 const teacherLoginPasswordInput = document.querySelector("#teacherLoginPasswordInput");
 const teacherAuthMessage = document.querySelector("#teacherAuthMessage");
 const teacherSessionInfo = document.querySelector("#teacherSessionInfo");
+const teacherSessionClassText = document.querySelector("#teacherSessionClassText");
+const teacherSessionTeacherText = document.querySelector("#teacherSessionTeacherText");
 const teacherLogoutBtn = document.querySelector("#teacherLogoutBtn");
 const teacherAccountOpenBtn = document.querySelector("#teacherAccountOpenBtn");
 const teacherAccountModal = document.querySelector("#teacherAccountModal");
@@ -72,11 +75,28 @@ const teacherScheduleSelectedDateTitle = document.querySelector("#teacherSchedul
 const teacherScheduleListHint = document.querySelector("#teacherScheduleListHint");
 const teacherScheduleList = document.querySelector("#teacherScheduleList");
 const teacherScheduleRefreshBtn = document.querySelector("#teacherScheduleRefreshBtn");
-const teacherScheduleDetailCard = document.querySelector("#teacherScheduleDetailCard");
+const teacherSchedulePrintBtn = document.querySelector("#teacherSchedulePrintBtn");
+const teacherSchedulePrintModal = document.querySelector("#teacherSchedulePrintModal");
+const teacherSchedulePrintModalCloseBtn = document.querySelector("#teacherSchedulePrintModalCloseBtn");
+const teacherSchedulePrintStart = document.querySelector("#teacherSchedulePrintStart");
+const teacherSchedulePrintEnd = document.querySelector("#teacherSchedulePrintEnd");
+const teacherSchedulePrintMessage = document.querySelector("#teacherSchedulePrintMessage");
+const teacherSchedulePrintDownloadBtn = document.querySelector("#teacherSchedulePrintDownloadBtn");
+const teacherScheduleDetailModal = document.querySelector("#teacherScheduleDetailModal");
+const teacherScheduleDetailModalCloseBtn = document.querySelector("#teacherScheduleDetailModalCloseBtn");
 const teacherScheduleDetailContent = document.querySelector("#teacherScheduleDetailContent");
 const teacherScheduleStatusSelect = document.querySelector("#teacherScheduleStatusSelect");
 const saveTeacherScheduleStatusBtn = document.querySelector("#saveTeacherScheduleStatusBtn");
 const teacherScheduleStatusMessage = document.querySelector("#teacherScheduleStatusMessage");
+const teacherScheduleEditBtn = document.querySelector("#teacherScheduleEditBtn");
+const teacherScheduleCancelEditBtn = document.querySelector("#teacherScheduleCancelEditBtn");
+const teacherScheduleSaveEditBtn = document.querySelector("#teacherScheduleSaveEditBtn");
+const teacherScheduleDeleteBtn = document.querySelector("#teacherScheduleDeleteBtn");
+const teacherScheduleDeleteModal = document.querySelector("#teacherScheduleDeleteModal");
+const teacherScheduleDeleteModalCloseBtn = document.querySelector("#teacherScheduleDeleteModalCloseBtn");
+const teacherScheduleDeletePreview = document.querySelector("#teacherScheduleDeletePreview");
+const teacherScheduleDeleteMessage = document.querySelector("#teacherScheduleDeleteMessage");
+const teacherScheduleDeleteConfirmBtn = document.querySelector("#teacherScheduleDeleteConfirmBtn");
 
 const fields = {
   teacher: document.querySelector("#teacher"),
@@ -112,12 +132,34 @@ const teacherScheduleState = {
   filteredConsultations: [],
   selectedItemId: "",
   isLoaded: false,
+  isEditing: false,
+  editDraft: null,
 };
 let activeMainTab = "student";
 let teacherDashboardBootstrapped = false;
 let toastTimer = null;
 const studentSettingsCache = {};
 const CONSULTATION_DATE_PLACEHOLDER = "상담 가능 일자를 선택하세요";
+
+// 학생 Step2 캘린더(아코디언)
+const studentCalendarToggleBtn = document.querySelector("#studentCalendarToggleBtn");
+const studentCalendarPanel = document.querySelector("#studentCalendarPanel");
+const studentCalendarPrevMonthBtn = document.querySelector("#studentCalendarPrevMonthBtn");
+const studentCalendarNextMonthBtn = document.querySelector("#studentCalendarNextMonthBtn");
+const studentCalendarMonthLabel = document.querySelector("#studentCalendarMonthLabel");
+const studentCalendarGrid = document.querySelector("#studentCalendarGrid");
+const studentCalendarSlotsTitle = document.querySelector("#studentCalendarSlotsTitle");
+const studentCalendarSlots = document.querySelector("#studentCalendarSlots");
+const studentCalendarHint = document.querySelector("#studentCalendarHint");
+const studentCalendarSelection = document.querySelector("#studentCalendarSelection");
+
+const studentCalendarState = {
+  monthCursor: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  expandedDateKey: "",
+};
+
+const studentBookedCache = {};
+let studentCalendarSlotsRenderSeq = 0;
 
 const teacherSession = {
   isLoggedIn: false,
@@ -138,6 +180,7 @@ updateSubmitDock();
 resetSlotBoardBeforeCheck();
 updateStepProgress();
 initializeTeacherSettingsUI();
+initializeStudentCalendarUI();
 window.addEventListener("resize", updateSubmitDock);
 
 if (fields.grade) {
@@ -242,17 +285,6 @@ if (form) {
       return;
     }
 
-    const blocked = await isTimeBlocked(requestData.date, requestData.time, requestData.teacher);
-    if (blocked === null) {
-      showMessage("예약 현황을 확인하지 못해 신청을 진행할 수 없습니다. 잠시 후 다시 시도해주세요.", true);
-      return;
-    }
-    if (blocked) {
-      showMessage("이미 예약된 시간입니다. 다른 시간을 선택해주세요.", true);
-      await renderTimeSlotBoard({ forceFetch: true });
-      return;
-    }
-
     setSubmitting(true);
     showMessage("");
     try {
@@ -260,7 +292,7 @@ if (form) {
       if (!result.success) {
         if (result.duplicateSlot) {
           showMessage("이미 예약된 시간입니다. 다른 시간을 선택해주세요.", true);
-          await renderTimeSlotBoard({ forceFetch: true });
+          void renderTimeSlotBoard({ forceFetch: true });
           return;
         }
         if (result.duplicate) {
@@ -275,7 +307,7 @@ if (form) {
       setDefaultUrgency();
       updateMessageCounter();
       showMessage("상담 신청이 접수되었습니다 😊");
-      await renderTimeSlotBoard({ forceFetch: true });
+      void renderTimeSlotBoard({ forceFetch: true });
       updateStepProgress();
       if (fields.name) {
         fields.name.focus();
@@ -379,11 +411,72 @@ function initializeTeacherSettingsUI() {
   if (saveTeacherScheduleStatusBtn) {
     saveTeacherScheduleStatusBtn.addEventListener("click", handleTeacherScheduleStatusSave);
   }
+  if (teacherScheduleEditBtn) {
+    teacherScheduleEditBtn.addEventListener("click", () => {
+      teacherScheduleState.isEditing = true;
+      teacherScheduleState.editDraft = null;
+      renderTeacherScheduleDetail();
+    });
+  }
+  if (teacherScheduleCancelEditBtn) {
+    teacherScheduleCancelEditBtn.addEventListener("click", () => {
+      teacherScheduleState.isEditing = false;
+      teacherScheduleState.editDraft = null;
+      renderTeacherScheduleDetail();
+    });
+  }
+  if (teacherScheduleSaveEditBtn) {
+    teacherScheduleSaveEditBtn.addEventListener("click", handleTeacherConsultationUpdateSave);
+  }
+  if (teacherScheduleDeleteBtn) {
+    teacherScheduleDeleteBtn.addEventListener("click", () => openTeacherScheduleDeleteModal());
+  }
+  if (teacherScheduleDeleteModalCloseBtn) {
+    teacherScheduleDeleteModalCloseBtn.addEventListener("click", () => closeTeacherScheduleDeleteModal());
+  }
+  if (teacherScheduleDeleteModal) {
+    teacherScheduleDeleteModal.addEventListener("click", (event) => {
+      if (event.target === teacherScheduleDeleteModal) {
+        closeTeacherScheduleDeleteModal();
+      }
+    });
+  }
+  if (teacherScheduleDeleteConfirmBtn) {
+    teacherScheduleDeleteConfirmBtn.addEventListener("click", handleTeacherConsultationDeleteConfirm);
+  }
   if (teacherScheduleRefreshBtn) {
     teacherScheduleRefreshBtn.addEventListener("click", async () => {
       await ensureTeacherScheduleLoaded(true);
       showToast("상담 일정을 새로고침했습니다.");
     });
+  }
+  if (teacherSchedulePrintBtn) {
+    teacherSchedulePrintBtn.addEventListener("click", () => {
+      openTeacherSchedulePrintModal();
+    });
+  }
+  if (teacherScheduleDetailModalCloseBtn) {
+    teacherScheduleDetailModalCloseBtn.addEventListener("click", () => closeTeacherScheduleDetailModal());
+  }
+  if (teacherScheduleDetailModal) {
+    teacherScheduleDetailModal.addEventListener("click", (event) => {
+      if (event.target === teacherScheduleDetailModal) {
+        closeTeacherScheduleDetailModal();
+      }
+    });
+  }
+  if (teacherSchedulePrintModalCloseBtn) {
+    teacherSchedulePrintModalCloseBtn.addEventListener("click", () => closeTeacherSchedulePrintModal());
+  }
+  if (teacherSchedulePrintModal) {
+    teacherSchedulePrintModal.addEventListener("click", (event) => {
+      if (event.target === teacherSchedulePrintModal) {
+        closeTeacherSchedulePrintModal();
+      }
+    });
+  }
+  if (teacherSchedulePrintDownloadBtn) {
+    teacherSchedulePrintDownloadBtn.addEventListener("click", handleTeacherSchedulePdfDownload);
   }
   window.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") {
@@ -391,6 +484,18 @@ function initializeTeacherSettingsUI() {
     }
     if (isTeacherAccountModalOpen()) {
       closeTeacherAccountModal();
+      return;
+    }
+    if (isTeacherSchedulePrintModalOpen()) {
+      closeTeacherSchedulePrintModal();
+      return;
+    }
+    if (isTeacherScheduleDeleteModalOpen()) {
+      closeTeacherScheduleDeleteModal();
+      return;
+    }
+    if (isTeacherScheduleDetailModalOpen()) {
+      closeTeacherScheduleDetailModal();
       return;
     }
     if (activeMainTab === "teacher") {
@@ -401,6 +506,162 @@ function initializeTeacherSettingsUI() {
 
 function isTeacherAccountModalOpen() {
   return Boolean(teacherAccountModal && !teacherAccountModal.hidden);
+}
+
+function isTeacherSchedulePrintModalOpen() {
+  return Boolean(teacherSchedulePrintModal && !teacherSchedulePrintModal.hidden);
+}
+
+function isTeacherScheduleDeleteModalOpen() {
+  return Boolean(teacherScheduleDeleteModal && !teacherScheduleDeleteModal.hidden);
+}
+
+function isTeacherScheduleDetailModalOpen() {
+  return Boolean(teacherScheduleDetailModal && !teacherScheduleDetailModal.hidden);
+}
+
+function openTeacherScheduleDetailModal() {
+  if (!teacherScheduleDetailModal) {
+    return;
+  }
+  teacherScheduleDetailModal.hidden = false;
+  teacherScheduleDetailModal.setAttribute("aria-hidden", "false");
+}
+
+function closeTeacherScheduleDetailModal() {
+  if (!teacherScheduleDetailModal) {
+    return;
+  }
+  teacherScheduleDetailModal.hidden = true;
+  teacherScheduleDetailModal.setAttribute("aria-hidden", "true");
+  teacherScheduleState.isEditing = false;
+  teacherScheduleState.editDraft = null;
+  setModalMessage(teacherScheduleStatusMessage, "");
+}
+
+function openTeacherScheduleDeleteModal() {
+  if (!teacherScheduleDeleteModal || !teacherScheduleDeletePreview) {
+    return;
+  }
+  const item = teacherScheduleState.consultations.find((it) => it.id === teacherScheduleState.selectedItemId);
+  if (!item) {
+    return;
+  }
+  setModalMessage(teacherScheduleDeleteMessage, "");
+  teacherScheduleDeletePreview.textContent = `${item.date} ${item.time} · ${item.studentName} (${item.studentNumber || "-"})`;
+  teacherScheduleDeleteModal.hidden = false;
+  teacherScheduleDeleteModal.setAttribute("aria-hidden", "false");
+}
+
+function closeTeacherScheduleDeleteModal() {
+  if (!teacherScheduleDeleteModal) {
+    return;
+  }
+  setModalMessage(teacherScheduleDeleteMessage, "");
+  teacherScheduleDeleteModal.hidden = true;
+  teacherScheduleDeleteModal.setAttribute("aria-hidden", "true");
+}
+
+function openTeacherSchedulePrintModal() {
+  if (!teacherSchedulePrintModal) {
+    return;
+  }
+  setModalMessage(teacherSchedulePrintMessage, "");
+  // 기본값: 현재 달 전체
+  const cursor = teacherScheduleState.monthCursor || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+  if (teacherSchedulePrintStart) {
+    teacherSchedulePrintStart.value = formatDateKey(start);
+  }
+  if (teacherSchedulePrintEnd) {
+    teacherSchedulePrintEnd.value = formatDateKey(end);
+  }
+  teacherSchedulePrintModal.hidden = false;
+  teacherSchedulePrintModal.setAttribute("aria-hidden", "false");
+}
+
+function closeTeacherSchedulePrintModal() {
+  if (!teacherSchedulePrintModal) {
+    return;
+  }
+  setModalMessage(teacherSchedulePrintMessage, "");
+  teacherSchedulePrintModal.hidden = true;
+  teacherSchedulePrintModal.setAttribute("aria-hidden", "true");
+}
+
+async function handleTeacherSchedulePdfDownload() {
+  if (!teacherSession.isLoggedIn || !teacherSession.token) {
+    handleTeacherSessionExpired();
+    return;
+  }
+  const start = normalizeDateValue(teacherSchedulePrintStart ? teacherSchedulePrintStart.value : "");
+  const end = normalizeDateValue(teacherSchedulePrintEnd ? teacherSchedulePrintEnd.value : "");
+  if (!start || !end || start > end) {
+    setModalMessage(teacherSchedulePrintMessage, "출력 기간을 올바르게 선택해 주세요.", true);
+    return;
+  }
+  if (teacherSchedulePrintDownloadBtn) {
+    teacherSchedulePrintDownloadBtn.disabled = true;
+  }
+  setModalMessage(teacherSchedulePrintMessage, "PDF를 만드는 중입니다. 잠시만 기다려 주세요...");
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "exportTeacherSchedulePdf",
+        token: teacherSession.token,
+        startDate: start,
+        endDate: end,
+      }),
+    });
+    const rawText = await response.text();
+    let result = {};
+    if (rawText) {
+      result = JSON.parse(rawText);
+    }
+    if (!response.ok || !result.success) {
+      if (result && result.sessionExpired) {
+        handleTeacherSessionExpired();
+        return;
+      }
+      setModalMessage(
+        teacherSchedulePrintMessage,
+        (result && result.message) ? String(result.message) : `PDF 생성에 실패했습니다. (HTTP ${response.status})`,
+        true
+      );
+      return;
+    }
+    const base64 = String(result.pdfBase64 || "").trim();
+    const filename = String(result.filename || "상담일정표.pdf").trim() || "상담일정표.pdf";
+    if (!base64) {
+      setModalMessage(teacherSchedulePrintMessage, "PDF 데이터를 받지 못했습니다. 다시 시도해 주세요.", true);
+      return;
+    }
+    const binary = window.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setModalMessage(teacherSchedulePrintMessage, "다운로드를 시작합니다.");
+  } catch (error) {
+    console.error("handleTeacherSchedulePdfDownload failed", error);
+    setModalMessage(teacherSchedulePrintMessage, "PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.", true);
+  } finally {
+    if (teacherSchedulePrintDownloadBtn) {
+      teacherSchedulePrintDownloadBtn.disabled = false;
+    }
+  }
 }
 
 function openTeacherAccountModal() {
@@ -559,13 +820,17 @@ function updateTeacherSessionDisplay() {
     return;
   }
   if (!teacherSession.isLoggedIn || !teacherSession.teacherName) {
-    teacherSessionInfo.textContent = "";
     teacherSessionInfo.hidden = true;
     return;
   }
   const name = String(teacherSession.teacherName || "").trim();
   const klass = String(teacherSession.className || "").trim();
-  teacherSessionInfo.textContent = klass ? `${name} 선생님 · ${klass}` : `${name} 선생님`;
+  if (teacherSessionClassText) {
+    teacherSessionClassText.textContent = `🏫 ${klass || "학급 미지정"}`;
+  }
+  if (teacherSessionTeacherText) {
+    teacherSessionTeacherText.textContent = `🧑‍🏫 ${name}선생님`;
+  }
   teacherSessionInfo.hidden = false;
 }
 
@@ -651,10 +916,20 @@ function getTeacherScheduleDateKey(date) {
 
 function normalizeConsultationStatus(value) {
   const text = String(value || "").trim();
-  if (text === "확인중" || text === "완료") {
-    return text;
+  if (text === "상담 완료") {
+    return "상담 완료";
   }
-  return "처리안됨";
+  if (text === "상담 전") {
+    return "상담 전";
+  }
+  // 구버전 값 호환
+  if (text === "완료") {
+    return "상담 완료";
+  }
+  if (text === "처리안됨" || text === "확인중") {
+    return "상담 전";
+  }
+  return "상담 전";
 }
 
 /** 시트·세션 학급명 공백 차이로 일정이 비는 것 방지 (서버 normalizeClassNameKey와 동일 규칙) */
@@ -822,9 +1097,19 @@ function renderTeacherScheduleCalendar() {
   teacherScheduleMonthLabel.textContent = `${cursor.getFullYear()}년 ${cursor.getMonth() + 1}월`;
   teacherScheduleCalendarGrid.innerHTML = "";
 
-  const countMap = {};
+  const itemsByDate = {};
   teacherScheduleState.consultations.forEach((item) => {
-    countMap[item.date] = (countMap[item.date] || 0) + 1;
+    const d = String(item.date || "").trim();
+    if (!d) {
+      return;
+    }
+    if (!itemsByDate[d]) {
+      itemsByDate[d] = [];
+    }
+    itemsByDate[d].push(item);
+  });
+  Object.keys(itemsByDate).forEach((d) => {
+    itemsByDate[d].sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
   });
 
   const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -837,37 +1122,54 @@ function renderTeacherScheduleCalendar() {
     const dateKey = formatDateKey(date);
     const isCurrentMonth = date.getMonth() === cursor.getMonth();
     const isToday = dateKey === todayKey;
-    const isSelected = teacherScheduleState.selectedDate === dateKey;
-    const count = countMap[dateKey] || 0;
+    const isSelectedDay = teacherScheduleState.selectedDate === dateKey;
+    const items = itemsByDate[dateKey] || [];
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "teacher-schedule-day";
+    const cell = document.createElement("div");
+    cell.className = "teacher-schedule-day";
     if (!isCurrentMonth) {
-      button.classList.add("is-outside");
+      cell.classList.add("is-outside");
     }
     if (isToday) {
-      button.classList.add("is-today");
+      cell.classList.add("is-today");
     }
-    if (isSelected) {
-      button.classList.add("is-selected");
+    if (isSelectedDay) {
+      cell.classList.add("is-selected");
     }
     const numSpan = document.createElement("span");
     numSpan.className = "teacher-schedule-day__num";
     numSpan.textContent = String(date.getDate());
-    const countSpan = document.createElement("span");
-    countSpan.className = "teacher-schedule-day__count";
-    countSpan.textContent = count > 0 ? `상담 ${count}건` : "";
-    button.appendChild(numSpan);
-    button.appendChild(countSpan);
-    button.addEventListener("click", () => {
-      teacherScheduleState.selectedDate = dateKey;
-      teacherScheduleState.selectedItemId = "";
-      renderTeacherScheduleCalendar();
-      renderTeacherScheduleList();
-      renderTeacherScheduleDetail();
+    cell.appendChild(numSpan);
+
+    const list = document.createElement("div");
+    list.className = "teacher-schedule-day__items";
+    items.forEach((item) => {
+      const entry = document.createElement("button");
+      entry.type = "button";
+      entry.className = "teacher-schedule-entry";
+      if (normalizeConsultationStatus(item.status || "") === "상담 완료") {
+        entry.classList.add("is-done");
+      }
+      if (item.id === teacherScheduleState.selectedItemId) {
+        entry.classList.add("is-selected");
+      }
+      entry.textContent = `${String(item.time || "").trim()} ${String(item.studentName || "").trim()}`.trim();
+      entry.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        teacherScheduleState.selectedDate = dateKey;
+        teacherScheduleState.selectedItemId = item.id;
+        teacherScheduleState.isEditing = false;
+        teacherScheduleState.editDraft = null;
+        renderTeacherScheduleCalendar();
+        openTeacherScheduleDetailModal();
+        renderTeacherScheduleDetail();
+      });
+      list.appendChild(entry);
     });
-    teacherScheduleCalendarGrid.appendChild(button);
+    cell.appendChild(list);
+
+    teacherScheduleCalendarGrid.appendChild(cell);
   }
 }
 
@@ -922,31 +1224,168 @@ function renderTeacherScheduleList() {
 }
 
 function renderTeacherScheduleDetail() {
-  if (!teacherScheduleDetailCard || !teacherScheduleDetailContent || !teacherScheduleStatusSelect) {
+  if (!teacherScheduleDetailContent || !teacherScheduleStatusSelect) {
     return;
   }
-  const item = teacherScheduleState.filteredConsultations.find((it) => it.id === teacherScheduleState.selectedItemId);
+  const item = teacherScheduleState.consultations.find((it) => it.id === teacherScheduleState.selectedItemId);
   if (!item) {
-    teacherScheduleDetailCard.hidden = true;
-    setModalMessage(teacherScheduleStatusMessage, "");
+    if (isTeacherScheduleDetailModalOpen()) {
+      closeTeacherScheduleDetailModal();
+    }
     return;
   }
-  teacherScheduleDetailCard.hidden = false;
   teacherScheduleDetailContent.textContent = "";
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "학년반", item.className);
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "번호", item.studentNumber);
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "이름", item.studentName);
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "신청 시간", item.time);
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "긴급도", item.urgency);
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "주제", item.topic);
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "상담 내용", item.message);
-  appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "처리 상태", item.status);
+  if (!teacherScheduleState.isEditing) {
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "학년반", item.className);
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "번호", item.studentNumber);
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "이름", item.studentName);
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "희망날짜", item.date);
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "희망시간", item.time);
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "긴급도", item.urgency);
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "주제", item.topic);
+    appendTeacherDetailLabeledRow(teacherScheduleDetailContent, "상담 내용", item.message);
+  } else {
+    // draft 기본값
+    if (!teacherScheduleState.editDraft) {
+      teacherScheduleState.editDraft = {
+        studentName: item.studentName || "",
+        studentNumber: item.studentNumber || "",
+        date: item.date || "",
+        time: item.time || "",
+        urgency: item.urgency || "",
+        topic: item.topic || "",
+        message: item.message || "",
+        status: normalizeConsultationStatus(item.status || "상담 전"),
+      };
+    }
+    const d = teacherScheduleState.editDraft;
+
+    const buildField = (label, inputEl) => {
+      const wrap = document.createElement("label");
+      wrap.className = "field";
+      const span = document.createElement("span");
+      span.className = "field__label";
+      span.textContent = label;
+      wrap.appendChild(span);
+      const iw = document.createElement("div");
+      iw.className = "input-wrap";
+      iw.appendChild(inputEl);
+      wrap.appendChild(iw);
+      return wrap;
+    };
+
+    const row2 = document.createElement("div");
+    row2.className = "field-row field-row--2";
+
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.value = d.studentName;
+    nameInput.addEventListener("input", () => (d.studentName = nameInput.value));
+
+    const numInput = document.createElement("input");
+    numInput.type = "number";
+    numInput.min = "1";
+    numInput.inputMode = "numeric";
+    numInput.value = d.studentNumber;
+    numInput.addEventListener("input", () => (d.studentNumber = numInput.value));
+
+    row2.appendChild(buildField("이름", nameInput));
+    row2.appendChild(buildField("번호", numInput));
+
+    const rowDateTime = document.createElement("div");
+    rowDateTime.className = "field-row field-row--2";
+
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.value = d.date;
+    dateInput.addEventListener("input", () => (d.date = dateInput.value));
+
+    const timeSelect = document.createElement("select");
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "시간 선택";
+    timeSelect.appendChild(placeholder);
+    TIME_SLOTS.forEach((t) => {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      timeSelect.appendChild(opt);
+    });
+    timeSelect.value = d.time;
+    timeSelect.addEventListener("change", () => (d.time = timeSelect.value));
+
+    rowDateTime.appendChild(buildField("희망날짜", dateInput));
+    rowDateTime.appendChild(buildField("희망시간", timeSelect));
+
+    const rowMeta = document.createElement("div");
+    rowMeta.className = "field-row field-row--2";
+
+    const urgencySelect = document.createElement("select");
+    ["", "긴급함", "보통", "천천히 가능"].forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v || "긴급도 선택";
+      urgencySelect.appendChild(opt);
+    });
+    urgencySelect.value = d.urgency || "";
+    urgencySelect.addEventListener("change", () => (d.urgency = urgencySelect.value));
+
+    const topicSelect = document.createElement("select");
+    ["", "진로", "학업", "친구관계", "학교생활", "정서/가정", "기타"].forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v || "상담 주제 선택";
+      topicSelect.appendChild(opt);
+    });
+    topicSelect.value = d.topic || "";
+    topicSelect.addEventListener("change", () => (d.topic = topicSelect.value));
+
+    rowMeta.appendChild(buildField("긴급도", urgencySelect));
+    rowMeta.appendChild(buildField("주제", topicSelect));
+
+    const msgLabel = document.createElement("label");
+    msgLabel.className = "field";
+    const msgSpan = document.createElement("span");
+    msgSpan.className = "field__label";
+    msgSpan.textContent = "상담 내용";
+    msgLabel.appendChild(msgSpan);
+    const msgWrap = document.createElement("div");
+    msgWrap.className = "input-wrap";
+    const msg = document.createElement("textarea");
+    msg.rows = 6;
+    msg.value = d.message;
+    msg.addEventListener("input", () => (d.message = msg.value));
+    msgWrap.appendChild(msg);
+    msgLabel.appendChild(msgWrap);
+
+    teacherScheduleDetailContent.appendChild(row2);
+    teacherScheduleDetailContent.appendChild(rowDateTime);
+    teacherScheduleDetailContent.appendChild(rowMeta);
+    teacherScheduleDetailContent.appendChild(msgLabel);
+  }
   teacherScheduleStatusSelect.value = normalizeConsultationStatus(item.status);
   setModalMessage(teacherScheduleStatusMessage, "");
+
+  if (teacherScheduleEditBtn) {
+    teacherScheduleEditBtn.hidden = teacherScheduleState.isEditing;
+  }
+  if (teacherScheduleCancelEditBtn) {
+    teacherScheduleCancelEditBtn.hidden = !teacherScheduleState.isEditing;
+  }
+  if (teacherScheduleSaveEditBtn) {
+    teacherScheduleSaveEditBtn.hidden = !teacherScheduleState.isEditing;
+  }
+  if (teacherScheduleDeleteBtn) {
+    teacherScheduleDeleteBtn.hidden = !teacherScheduleState.isEditing;
+  }
+  if (saveTeacherScheduleStatusBtn) {
+    // 상담 여부 저장은 항상 가능(완료도 수정 가능)
+    saveTeacherScheduleStatusBtn.hidden = false;
+  }
 }
 
 async function handleTeacherScheduleStatusSave() {
-  const item = teacherScheduleState.filteredConsultations.find((it) => it.id === teacherScheduleState.selectedItemId);
+  const item = teacherScheduleState.consultations.find((it) => it.id === teacherScheduleState.selectedItemId);
   if (!item) {
     setModalMessage(teacherScheduleStatusMessage, "상담 항목을 먼저 선택해 주세요.", true);
     return;
@@ -1005,6 +1444,147 @@ async function handleTeacherScheduleStatusSave() {
     }
     if (teacherScheduleRefreshBtn) {
       teacherScheduleRefreshBtn.disabled = false;
+    }
+  }
+}
+
+async function handleTeacherConsultationUpdateSave() {
+  const item = teacherScheduleState.consultations.find((it) => it.id === teacherScheduleState.selectedItemId);
+  if (!item) {
+    setModalMessage(teacherScheduleStatusMessage, "상담 항목을 먼저 선택해 주세요.", true);
+    return;
+  }
+  if (!teacherSession.token) {
+    handleTeacherSessionExpired();
+    return;
+  }
+  const draft = teacherScheduleState.editDraft || {};
+  const payload = {
+    action: "updateConsultation",
+    token: teacherSession.token,
+    consultationId: item.id,
+    // 모든 필드 수정 허용(학급은 세션 기준으로 검증)
+    name: String(draft.studentName || "").trim(),
+    number: String(draft.studentNumber || "").trim(),
+    date: normalizeDateValue(String(draft.date || "").trim()),
+    time: normalizeTime(String(draft.time || "").trim()),
+    urgency: String(draft.urgency || "").trim(),
+    topic: String(draft.topic || "").trim(),
+    message: String(draft.message || "").trim(),
+    status: normalizeConsultationStatus(teacherScheduleStatusSelect ? teacherScheduleStatusSelect.value : draft.status),
+  };
+  if (!payload.name || !payload.number || !payload.date || !payload.time) {
+    setModalMessage(teacherScheduleStatusMessage, "이름/번호/날짜/시간은 필수입니다.", true);
+    return;
+  }
+  if (teacherScheduleSaveEditBtn) {
+    teacherScheduleSaveEditBtn.disabled = true;
+  }
+  if (teacherScheduleEditBtn) {
+    teacherScheduleEditBtn.disabled = true;
+  }
+  if (teacherScheduleCancelEditBtn) {
+    teacherScheduleCancelEditBtn.disabled = true;
+  }
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP_${response.status}`);
+    }
+    const result = await response.json();
+    if (!result.success) {
+      if (result.sessionExpired) {
+        handleTeacherSessionExpired();
+      } else {
+        setModalMessage(teacherScheduleStatusMessage, result.message || "수정 저장에 실패했습니다.", true);
+      }
+      return;
+    }
+    teacherScheduleState.isEditing = false;
+    teacherScheduleState.editDraft = null;
+    await ensureTeacherScheduleLoaded(true);
+    const refreshed = teacherScheduleState.consultations.find((it) => it.id === item.id);
+    if (refreshed) {
+      teacherScheduleState.selectedDate = refreshed.date;
+      teacherScheduleState.selectedItemId = refreshed.id;
+    } else {
+      teacherScheduleState.selectedItemId = "";
+    }
+    renderTeacherScheduleCalendar();
+    renderTeacherScheduleDetail();
+    setModalMessage(teacherScheduleStatusMessage, result.message || "수정이 저장되었습니다.");
+    showToast("수정이 저장되었습니다.");
+  } catch (error) {
+    console.error("handleTeacherConsultationUpdateSave failed", error);
+    setModalMessage(teacherScheduleStatusMessage, "수정 저장 중 오류가 발생했습니다.", true);
+  } finally {
+    if (teacherScheduleSaveEditBtn) {
+      teacherScheduleSaveEditBtn.disabled = false;
+    }
+    if (teacherScheduleEditBtn) {
+      teacherScheduleEditBtn.disabled = false;
+    }
+    if (teacherScheduleCancelEditBtn) {
+      teacherScheduleCancelEditBtn.disabled = false;
+    }
+  }
+}
+
+async function handleTeacherConsultationDeleteConfirm() {
+  const item = teacherScheduleState.consultations.find((it) => it.id === teacherScheduleState.selectedItemId);
+  if (!item) {
+    setModalMessage(teacherScheduleDeleteMessage, "삭제할 상담을 찾지 못했습니다.", true);
+    return;
+  }
+  if (!teacherSession.token) {
+    handleTeacherSessionExpired();
+    return;
+  }
+  if (teacherScheduleDeleteConfirmBtn) {
+    teacherScheduleDeleteConfirmBtn.disabled = true;
+  }
+  setModalMessage(teacherScheduleDeleteMessage, "");
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "deleteConsultation",
+        token: teacherSession.token,
+        consultationId: item.id,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP_${response.status}`);
+    }
+    const result = await response.json();
+    if (!result.success) {
+      if (result.sessionExpired) {
+        handleTeacherSessionExpired();
+        return;
+      }
+      setModalMessage(teacherScheduleDeleteMessage, result.message || "삭제에 실패했습니다.", true);
+      return;
+    }
+    closeTeacherScheduleDeleteModal();
+    teacherScheduleState.isEditing = false;
+    teacherScheduleState.editDraft = null;
+    teacherScheduleState.selectedItemId = "";
+    await ensureTeacherScheduleLoaded(true);
+    renderTeacherScheduleCalendar();
+    renderTeacherScheduleDetail();
+    setModalMessage(teacherScheduleStatusMessage, "삭제되었습니다.");
+    showToast("삭제되었습니다.");
+  } catch (error) {
+    console.error("handleTeacherConsultationDeleteConfirm failed", error);
+    setModalMessage(teacherScheduleDeleteMessage, "삭제 중 오류가 발생했습니다.", true);
+  } finally {
+    if (teacherScheduleDeleteConfirmBtn) {
+      teacherScheduleDeleteConfirmBtn.disabled = false;
     }
   }
 }
@@ -1136,7 +1716,12 @@ async function submitTeacherLogin() {
   }
   if (teacherAuthSubmitBtn) {
     teacherAuthSubmitBtn.disabled = true;
+    teacherAuthSubmitBtn.classList.add("is-loading");
   }
+  if (teacherAuthSubmitBtnText) {
+    teacherAuthSubmitBtnText.textContent = "로그인 중...";
+  }
+  setModalMessage(teacherAuthMessage, "로그인 정보를 확인하는 중입니다...");
   try {
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
@@ -1197,6 +1782,10 @@ async function submitTeacherLogin() {
   } finally {
     if (teacherAuthSubmitBtn) {
       teacherAuthSubmitBtn.disabled = false;
+      teacherAuthSubmitBtn.classList.remove("is-loading");
+    }
+    if (teacherAuthSubmitBtnText) {
+      teacherAuthSubmitBtnText.textContent = "로그인";
     }
   }
 }
@@ -2018,9 +2607,325 @@ function syncCheckAvailabilityButtonState() {
   checkAvailabilityBtn.disabled = isLoading || !isCheckAvailabilityAllowed();
 }
 
+function initializeStudentCalendarUI() {
+  if (!studentCalendarToggleBtn || !studentCalendarPanel) {
+    return;
+  }
+  studentCalendarToggleBtn.disabled = false;
+  studentCalendarToggleBtn.addEventListener("click", async () => {
+    const isOpen = !studentCalendarPanel.hasAttribute("hidden");
+    if (isOpen) {
+      studentCalendarPanel.setAttribute("hidden", "");
+      studentCalendarToggleBtn.textContent = "상담 캘린더 보기";
+      return;
+    }
+    studentCalendarToggleBtn.textContent = "캘린더 닫기";
+    studentCalendarPanel.removeAttribute("hidden");
+    await ensureStudentCalendarReady();
+    renderStudentCalendar();
+  });
+  if (studentCalendarPrevMonthBtn) {
+    studentCalendarPrevMonthBtn.addEventListener("click", () => {
+      const c = studentCalendarState.monthCursor;
+      studentCalendarState.monthCursor = new Date(c.getFullYear(), c.getMonth() - 1, 1);
+      studentCalendarState.expandedDateKey = "";
+      renderStudentCalendar();
+    });
+  }
+  if (studentCalendarNextMonthBtn) {
+    studentCalendarNextMonthBtn.addEventListener("click", () => {
+      const c = studentCalendarState.monthCursor;
+      studentCalendarState.monthCursor = new Date(c.getFullYear(), c.getMonth() + 1, 1);
+      studentCalendarState.expandedDateKey = "";
+      renderStudentCalendar();
+    });
+  }
+}
+
+async function ensureStudentCalendarReady() {
+  const className = String(fields.className ? fields.className.value : "").trim();
+  if (!className) {
+    return;
+  }
+  // 설정 캐시가 없으면 로드
+  if (!studentSettingsCache[className] || studentSettingsCache[className].fetchFailed) {
+    await refreshStudentSettingsForCurrentClass(true);
+  }
+  // 현재 선택된 날짜가 설정 범위를 벗어나면 초기화
+  if (fields.date && fields.date.value) {
+    const valid = validateSelectedDateByTeacherSettings();
+    if (!valid.valid) {
+      fields.date.value = "";
+      if (fields.time) {
+        fields.time.value = "";
+      }
+    }
+  }
+  // 월 커서를 가능한 첫 날짜로 맞춤
+  const settings = studentSettingsCache[className];
+  const dates = resolveAvailableDatesFromSettings(settings);
+  if (dates.length) {
+    const d0 = dates[0];
+    const parsed = new Date(`${d0}T00:00:00`);
+    if (!Number.isNaN(parsed.getTime())) {
+      studentCalendarState.monthCursor = new Date(parsed.getFullYear(), parsed.getMonth(), 1);
+    }
+  }
+}
+
+function studentBookedCacheKey(dateKey) {
+  const teacher = String(fields.teacher ? fields.teacher.value : "").trim();
+  const className = String(fields.className ? fields.className.value : "").trim();
+  return `${className}__${teacher}__${dateKey}`;
+}
+
+async function getBookedTimesForStudentCalendar(dateKey) {
+  const teacher = String(fields.teacher ? fields.teacher.value : "").trim();
+  if (!teacher || !dateKey) {
+    return new Set();
+  }
+  const key = studentBookedCacheKey(dateKey);
+  if (studentBookedCache[key]) {
+    return studentBookedCache[key];
+  }
+  const result = await getBookedTimesByDate(dateKey, teacher);
+  const set = new Set((result.success ? result.times : []).map((t) => normalizeTime(t)).filter(Boolean));
+  studentBookedCache[key] = set;
+  return set;
+}
+
+function renderStudentCalendar() {
+  if (!studentCalendarGrid || !studentCalendarMonthLabel || !studentCalendarToggleBtn) {
+    return;
+  }
+  const className = String(fields.className ? fields.className.value : "").trim();
+  const settings = className ? studentSettingsCache[className] : null;
+  if (!settings || settings.fetchFailed || !settings.applyStart || !settings.applyEnd) {
+    studentCalendarToggleBtn.disabled = true;
+    if (studentCalendarHint) {
+      studentCalendarHint.textContent = "먼저 STEP 01에서 학년·반을 선택해 주세요.";
+    }
+    return;
+  }
+  studentCalendarToggleBtn.disabled = false;
+  const cursor = studentCalendarState.monthCursor;
+  studentCalendarMonthLabel.textContent = `${cursor.getFullYear()}년 ${cursor.getMonth() + 1}월`;
+  studentCalendarGrid.innerHTML = "";
+
+  const allowedDates = resolveAvailableDatesFromSettings(settings);
+  const allowedDateSet = new Set(allowedDates);
+  const todayKey = formatDateKeyInSeoul(new Date());
+
+  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const startWeekday = firstDay.getDay();
+  const startDate = new Date(cursor.getFullYear(), cursor.getMonth(), 1 - startWeekday);
+
+  for (let i = 0; i < 42; i += 1) {
+    const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+    const dateKey = formatDateKey(d);
+    const isCurrentMonth = d.getMonth() === cursor.getMonth();
+    const isAllowed = allowedDateSet.has(dateKey) && dateKey >= todayKey && isApplicationWindowOpen(settings);
+    const isSelected = studentCalendarState.expandedDateKey === dateKey;
+
+    const cell = document.createElement("div");
+    cell.className = "student-calendar-day";
+    cell.dataset.date = dateKey;
+    if (!isCurrentMonth) {
+      cell.classList.add("is-outside");
+    }
+    if (!isAllowed) {
+      cell.classList.add("is-disabled");
+    } else {
+      cell.classList.add("is-available");
+    }
+    if (isSelected) {
+      cell.classList.add("is-selected");
+    }
+    const num = document.createElement("span");
+    num.className = "student-calendar-day__num";
+    num.textContent = String(d.getDate());
+    cell.appendChild(num);
+
+    cell.addEventListener("click", async () => {
+      if (!isAllowed) {
+        return;
+      }
+      const was = studentCalendarState.expandedDateKey === dateKey;
+      studentCalendarState.expandedDateKey = was ? "" : dateKey;
+      renderStudentCalendar();
+      await renderStudentCalendarSlots();
+    });
+
+    studentCalendarGrid.appendChild(cell);
+  }
+
+  void renderStudentCalendarSlots();
+}
+
+async function renderStudentCalendarSlots() {
+  const renderSeq = ++studentCalendarSlotsRenderSeq;
+  if (!studentCalendarSlots || !studentCalendarSlotsTitle) {
+    return;
+  }
+  const dateKey = String(studentCalendarState.expandedDateKey || "").trim();
+  studentCalendarSlots.innerHTML = "";
+  if (!dateKey) {
+    studentCalendarSlotsTitle.textContent = "날짜를 선택해 주세요";
+    return;
+  }
+  const className = String(fields.className ? fields.className.value : "").trim();
+  const settings = className ? studentSettingsCache[className] : null;
+  if (!settings) {
+    return;
+  }
+  studentCalendarSlotsTitle.textContent = `${dateKey} 상담 가능 시간`;
+
+  // 비동기 응답 도착 전에 다른 렌더가 시작됐다면 중단
+  if (renderSeq !== studentCalendarSlotsRenderSeq) {
+    return;
+  }
+  if (dateKey !== String(studentCalendarState.expandedDateKey || "").trim()) {
+    return;
+  }
+  const allowedTimes = getAvailableTimesBySettings(settings, dateKey).map((t) => normalizeTime(t)).filter(Boolean);
+  if (!allowedTimes.length) {
+    studentCalendarSlotsTitle.textContent = `${dateKey} (가능한 시간이 없습니다)`;
+    return;
+  }
+
+  const selectedDate = String(fields.date ? fields.date.value : "").trim();
+  const selectedTime = normalizeTime(fields.time ? fields.time.value : "");
+  const cacheKey = studentBookedCacheKey(dateKey);
+  const cachedBooked = studentBookedCache[cacheKey] || null;
+  if (studentCalendarHint) {
+    studentCalendarHint.textContent = cachedBooked
+      ? "날짜를 누르면 그 날의 상담 가능 시간이 표시됩니다."
+      : "예약 현황을 불러오는 중입니다...";
+  }
+  const groupMap = {
+    morning: [],
+    lunch: [],
+    after: [],
+    other: [],
+  };
+  allowedTimes.forEach((t) => {
+    const n = normalizeTime(t);
+    if (!n) {
+      return;
+    }
+    if (n <= "08:59") {
+      groupMap.morning.push(n);
+      return;
+    }
+    if (n >= "11:00" && n <= "13:59") {
+      groupMap.lunch.push(n);
+      return;
+    }
+    if (n >= "14:00") {
+      groupMap.after.push(n);
+      return;
+    }
+    groupMap.other.push(n);
+  });
+  const groups = [
+    { title: "🌅 아침", slots: groupMap.morning },
+    { title: "🍱 점심", slots: groupMap.lunch },
+    { title: "🌇 방과후", slots: groupMap.after },
+    { title: "🧩 기타", slots: groupMap.other },
+  ];
+
+  groups.forEach((group) => {
+    const normalizedSlots = group.slots
+      .map((t) => normalizeTime(t))
+      .filter(Boolean);
+    if (!normalizedSlots.length) {
+      return;
+    }
+    const section = document.createElement("section");
+    section.className = "student-time-group";
+    const title = document.createElement("p");
+    title.className = "student-time-group__title";
+    title.textContent = group.title;
+    section.appendChild(title);
+    const slotWrap = document.createElement("div");
+    slotWrap.className = "student-time-group__slots";
+
+    normalizedSlots.forEach((t) => {
+      const isPast = isPastTime(dateKey, t);
+      const isBooked = cachedBooked ? cachedBooked.has(t) : false;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "student-slot-btn";
+      btn.textContent = t;
+      btn.dataset.time = t;
+      btn.disabled = isPast || isBooked;
+      if (selectedDate === dateKey && selectedTime === t) {
+        btn.classList.add("is-selected");
+      }
+      btn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (fields.date) {
+          fields.date.value = dateKey;
+        }
+        if (fields.time) {
+          fields.time.value = t;
+        }
+        if (studentCalendarSelection) {
+          studentCalendarSelection.hidden = false;
+          studentCalendarSelection.textContent = `선택됨: ${dateKey} ${t}`;
+        }
+        updateStepProgress();
+        syncCheckAvailabilityButtonState();
+        renderStudentCalendar();
+      });
+      slotWrap.appendChild(btn);
+    });
+
+    section.appendChild(slotWrap);
+    studentCalendarSlots.appendChild(section);
+  });
+
+  // 캐시에 예약 정보가 없으면 백그라운드로 받아와 버튼 비활성만 갱신
+  if (!cachedBooked) {
+    const booked = await getBookedTimesForStudentCalendar(dateKey);
+    if (renderSeq !== studentCalendarSlotsRenderSeq) {
+      return;
+    }
+    if (dateKey !== String(studentCalendarState.expandedDateKey || "").trim()) {
+      return;
+    }
+    const buttons = studentCalendarSlots.querySelectorAll(".student-slot-btn");
+    buttons.forEach((btn) => {
+      const t = normalizeTime(btn.dataset.time || "");
+      const isPast = isPastTime(dateKey, t);
+      const isBooked = booked.has(t);
+      btn.disabled = isPast || isBooked;
+    });
+    if (studentCalendarHint) {
+      studentCalendarHint.textContent = "날짜를 누르면 그 날의 상담 가능 시간이 표시됩니다.";
+    }
+  }
+}
+
 function applyDateInputBySettings(settings) {
   if (!fields.date || fields.date.tagName !== "SELECT") {
     return;
+  }
+  if (studentCalendarToggleBtn) {
+    const usable = Boolean(
+      settings &&
+        !settings.fetchFailed &&
+        settings.applyStart &&
+        settings.applyEnd &&
+        resolveAvailableDatesFromSettings(settings).length &&
+        isApplicationWindowOpen(settings)
+    );
+    studentCalendarToggleBtn.disabled = !usable;
+    if (!usable && studentCalendarPanel && !studentCalendarPanel.hasAttribute("hidden")) {
+      studentCalendarPanel.setAttribute("hidden", "");
+      studentCalendarToggleBtn.textContent = "상담 캘린더 보기";
+    }
   }
   if (!settings || settings.fetchFailed || !settings.applyStart || !settings.applyEnd) {
     populateConsultationDateSelect([]);

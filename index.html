@@ -44,10 +44,10 @@
 
     <nav class="main-nav" role="tablist" aria-label="티쳐톡 메인 메뉴">
       <button type="button" id="mainTabStudentBtn" class="main-nav__tab is-active" role="tab" aria-selected="true" aria-controls="mainPanelStudent">
-        학생 신청
+        학생용
       </button>
       <button type="button" id="mainTabTeacherBtn" class="main-nav__tab" role="tab" aria-selected="false" aria-controls="mainPanelTeacher">
-        교사 관리
+        교사용
       </button>
     </nav>
 
@@ -130,14 +130,14 @@
                 <div>
                   <p class="kicker">STEP 02</p>
                   <h2>상담 일정</h2>
-                  <p class="muted">상담 신청 기간에만 신청할 수 있으며, 희망 날짜는 담임 선생님이 지정한 상담 가능 일자 중에서만 선택할 수 있어요. 날짜를 고른 뒤 시간 확인을 누르면 예약 현황을 볼 수 있어요.</p>
+                  <p class="muted">상담 캘린더에서 날짜와 시간을 선택하면 바로 예약을 진행할 수 있어요.</p>
                 </div>
                 <div id="step2Badge" class="step-badge" aria-hidden="true">2</div>
               </div>
 
               <div class="divider" role="separator"></div>
 
-              <div class="schedule-query-row">
+              <div class="schedule-query-row legacy-step2-controls" aria-hidden="true">
                 <label class="field">
                   <span class="field__label">희망 날짜</span>
                   <div class="input-wrap">
@@ -154,6 +154,33 @@
                 </button>
 
                 <input type="hidden" id="requestTime" required>
+              </div>
+
+              <div class="student-calendar-accordion">
+                <button type="button" id="studentCalendarToggleBtn" class="btn-ghost student-calendar-toggle" disabled>
+                  상담 캘린더 보기
+                </button>
+                <div id="studentCalendarPanel" class="student-calendar-panel" hidden>
+                  <div class="student-calendar-layout">
+                    <div class="setting-calendar student-calendar">
+                      <div class="setting-calendar__toolbar">
+                        <button type="button" id="studentCalendarPrevMonthBtn" class="calendar-nav" aria-label="이전 달">‹</button>
+                        <p id="studentCalendarMonthLabel" class="setting-calendar__month">2026년 4월</p>
+                        <button type="button" id="studentCalendarNextMonthBtn" class="calendar-nav" aria-label="다음 달">›</button>
+                      </div>
+                      <div class="setting-calendar__weekdays">
+                        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                      </div>
+                      <div id="studentCalendarGrid" class="setting-calendar__grid student-calendar__grid"></div>
+                    </div>
+                    <div class="student-time-panel">
+                      <h4 id="studentCalendarSlotsTitle" class="student-time-panel__title">날짜를 선택해 주세요</h4>
+                      <div id="studentCalendarSlots" class="student-time-panel__slots"></div>
+                    </div>
+                  </div>
+                  <p id="studentCalendarHint" class="hint">날짜를 누르면 그 날의 상담 가능 시간이 표시됩니다.</p>
+                  <p id="studentCalendarSelection" class="teacher-setting-info student-calendar-selection" hidden></p>
+                </div>
               </div>
 
               <div id="slotBoard" class="slot-board" aria-live="polite" hidden>
@@ -274,7 +301,10 @@
               </label>
               <p id="teacherAuthMessage" class="modal-message teacher-auth-message" aria-live="polite"></p>
               <div class="submit-block submit-block--inline">
-                <button type="button" id="teacherAuthSubmitBtn" class="btn-primary">로그인</button>
+                <button type="button" id="teacherAuthSubmitBtn" class="btn-primary">
+                  <span class="btn-primary__icon" aria-hidden="true">🔐</span>
+                  <span id="teacherAuthSubmitBtnText">로그인</span>
+                </button>
               </div>
             </section>
           </div>
@@ -287,8 +317,18 @@
                 <div>
                   <p class="kicker">세션</p>
                   <h2 id="teacherSessionHeading">로그인 정보</h2>
-                  <p id="teacherSessionInfo" class="teacher-session-line" aria-live="polite" hidden></p>
-                  <p class="muted teacher-session-hint">로그인되어 있어요. 상담 설정·일정은 아래에서, 비밀번호는 <strong>계정 관리</strong>에서 변경할 수 있습니다.</p>
+                </div>
+              </div>
+              <div class="teacher-session-row">
+                <div id="teacherSessionInfo" class="teacher-session-info-grid" aria-live="polite" hidden>
+                  <div class="teacher-info-card teacher-info-card--session">
+                    <p class="teacher-info-card__label">담당 학급</p>
+                    <p id="teacherSessionClassText" class="teacher-info-card__value">🏫</p>
+                  </div>
+                  <div class="teacher-info-card teacher-info-card--session">
+                    <p class="teacher-info-card__label">담당 선생님</p>
+                    <p id="teacherSessionTeacherText" class="teacher-info-card__value">🧑‍🏫</p>
+                  </div>
                 </div>
                 <div class="teacher-session-actions">
                   <button type="button" id="teacherAccountOpenBtn" class="btn-ghost teacher-session-action-btn">계정 관리</button>
@@ -301,12 +341,11 @@
               <div class="form-card__head">
                 <div>
                   <p class="kicker">설정</p>
-                  <h2 id="teacherCardSettingsTitle">상담 설정 관리</h2>
+                  <h2 id="teacherCardSettingsTitle">상담 설정</h2>
                   <p class="muted">담임 학급 기준으로 상담 신청 기간과 상담 가능 일정을 설정합니다.</p>
                 </div>
               </div>
               <div class="divider" role="separator"></div>
-              <p id="settingTeacherInfo" class="teacher-setting-info">담임 정보가 여기에 표시됩니다.</p>
 
               <section class="setting-section teacher-setting-section">
                 <h4 class="setting-section__title">상담 신청 기간 설정</h4>
@@ -333,9 +372,11 @@
                 <h4 class="setting-section__title">상담 기간 설정</h4>
                 <p class="muted">달력에서 날짜를 선택한 뒤, 아래에서 <strong>그날</strong> 상담 가능 시간을 선택합니다. 날짜마다 다른 시간을 설정할 수 있습니다.</p>
                 <p id="settingTimeSelectionHint" class="hint" aria-live="polite">달력에서 날짜를 먼저 선택해 주세요.</p>
-                <button type="button" id="settingRemoveDateBtn" class="btn-ghost teacher-setting-remove-date" hidden>선택한 날짜에서 상담 일정 삭제</button>
                 <label class="field" for="settingDateGrid">
-                  <span class="field__label">상담 가능 일자</span>
+                  <div class="field__row field__row--inline-actions">
+                    <span class="field__label">상담 가능 일자</span>
+                    <button type="button" id="settingRemoveDateBtn" class="btn-ghost btn-ghost--xs teacher-setting-remove-date" hidden>선택한 날짜에서 상담 일정 삭제</button>
+                  </div>
                   <div class="setting-calendar">
                     <div class="setting-calendar__toolbar">
                       <button type="button" id="settingPrevMonthBtn" class="calendar-nav" aria-label="이전 달">‹</button>
@@ -366,10 +407,13 @@
               <div class="form-card__head teacher-schedule-card-head">
                 <div>
                   <p class="kicker">일정</p>
-                  <h2 id="teacherCardScheduleTitle">상담 일정 관리</h2>
-                  <p class="muted">달력에서 날짜를 선택하면 해당 일자의 상담 신청을 확인할 수 있습니다.</p>
+                  <h2 id="teacherCardScheduleTitle">상담 캘린더</h2>
+                  <p class="muted">달력의 상담 항목(시간·이름)을 클릭하면 하단에서 상세를 확인할 수 있습니다.</p>
                 </div>
-                <button type="button" id="teacherScheduleRefreshBtn" class="btn-ghost teacher-schedule-refresh-btn">새로고침</button>
+                <div class="teacher-schedule-head-actions">
+                  <button type="button" id="teacherSchedulePrintBtn" class="btn-ghost teacher-schedule-print-btn">일정 출력</button>
+                  <button type="button" id="teacherScheduleRefreshBtn" class="btn-ghost teacher-schedule-refresh-btn">새로고침</button>
+                </div>
               </div>
               <div class="divider" role="separator"></div>
               <div class="teacher-schedule-layout teacher-schedule-layout--card">
@@ -384,31 +428,7 @@
                   </div>
                   <div id="teacherScheduleCalendarGrid" class="teacher-schedule-grid"></div>
                 </div>
-                <div class="teacher-schedule-list-card">
-                  <h4 id="teacherScheduleSelectedDateTitle" class="teacher-schedule-list-title">날짜를 선택해 주세요</h4>
-                  <p id="teacherScheduleListHint" class="teacher-schedule-list-hint">상담이 있는 날짜를 선택하면 해당 일자의 신청 목록을 확인할 수 있습니다.</p>
-                  <div id="teacherScheduleList" class="teacher-schedule-list"></div>
-                </div>
               </div>
-              <section id="teacherScheduleDetailCard" class="teacher-schedule-detail-card teacher-schedule-detail-card--embedded" hidden>
-                <h5 class="teacher-schedule-detail-title">상담 상세</h5>
-                <div id="teacherScheduleDetailContent" class="teacher-schedule-detail-content"></div>
-                <div class="field teacher-schedule-status-field">
-                  <span class="field__label">처리 상태</span>
-                  <div class="input-wrap">
-                    <span class="input-icon" aria-hidden="true">✅</span>
-                    <select id="teacherScheduleStatusSelect">
-                      <option value="처리안됨">처리안됨</option>
-                      <option value="확인중">확인중</option>
-                      <option value="완료">완료</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="submit-block submit-block--inline">
-                  <button type="button" id="saveTeacherScheduleStatusBtn" class="btn-primary btn-primary--sm">상태 저장</button>
-                </div>
-                <p id="teacherScheduleStatusMessage" class="modal-message" aria-live="polite"></p>
-              </section>
             </section>
           </div>
         </div>
@@ -446,6 +466,77 @@
       <p id="teacherPasswordChangeMessage" class="modal-message" aria-live="polite"></p>
       <div class="modal-actions">
         <button type="button" id="saveTeacherPasswordBtn" class="btn-primary btn-primary--sm">비밀번호 저장</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="teacherSchedulePrintModal" class="modal-backdrop" hidden aria-hidden="true">
+    <section class="modal-card modal-card--sm" role="dialog" aria-modal="true" aria-labelledby="teacherSchedulePrintModalTitle">
+      <button type="button" class="modal-close" id="teacherSchedulePrintModalCloseBtn" aria-label="닫기">✕</button>
+      <h2 id="teacherSchedulePrintModalTitle" class="modal-title">일정 출력</h2>
+      <p class="modal-subtitle">PDF로 저장할 기간을 선택한 뒤 다운로드하세요.</p>
+      <div class="field-row field-row--2">
+        <label class="field" for="teacherSchedulePrintStart">
+          <span class="field__label">시작일</span>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">📅</span>
+            <input type="date" id="teacherSchedulePrintStart">
+          </div>
+        </label>
+        <label class="field" for="teacherSchedulePrintEnd">
+          <span class="field__label">종료일</span>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">📅</span>
+            <input type="date" id="teacherSchedulePrintEnd">
+          </div>
+        </label>
+      </div>
+      <p id="teacherSchedulePrintMessage" class="modal-message" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" id="teacherSchedulePrintDownloadBtn" class="btn-primary btn-primary--sm">PDF 다운로드</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="teacherScheduleDetailModal" class="modal-backdrop" hidden aria-hidden="true">
+    <section class="modal-card teacher-detail-modal-card" role="dialog" aria-modal="true" aria-labelledby="teacherScheduleDetailModalTitle">
+      <button type="button" class="modal-close" id="teacherScheduleDetailModalCloseBtn" aria-label="닫기">✕</button>
+      <div class="teacher-detail-modal-head">
+        <h2 id="teacherScheduleDetailModalTitle" class="modal-title">상담 상세</h2>
+        <div class="teacher-detail-modal-head__actions">
+          <button type="button" id="teacherScheduleEditBtn" class="btn-ghost btn-ghost--sm">수정</button>
+            <button type="button" id="teacherScheduleCancelEditBtn" class="btn-ghost btn-ghost--sm" hidden>취소</button>
+            <button type="button" id="teacherScheduleDeleteBtn" class="btn-ghost btn-ghost--sm btn-danger" hidden>삭제</button>
+            <button type="button" id="teacherScheduleSaveEditBtn" class="btn-ghost btn-ghost--sm teacher-detail-save-btn" hidden>변경 저장</button>
+        </div>
+      </div>
+      <div id="teacherScheduleDetailContent" class="teacher-schedule-detail-content"></div>
+      <div class="teacher-detail-modal-foot">
+        <div class="field teacher-schedule-status-field">
+          <span class="field__label">상담 여부</span>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">✅</span>
+            <select id="teacherScheduleStatusSelect">
+              <option value="상담 전" selected>상담 전</option>
+              <option value="상담 완료">상담 완료</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" id="saveTeacherScheduleStatusBtn" class="btn-primary btn-primary--xs">저장</button>
+      </div>
+      <p id="teacherScheduleStatusMessage" class="modal-message" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div id="teacherScheduleDeleteModal" class="modal-backdrop" hidden aria-hidden="true">
+    <section class="modal-card modal-card--sm" role="dialog" aria-modal="true" aria-labelledby="teacherScheduleDeleteModalTitle">
+      <button type="button" class="modal-close" id="teacherScheduleDeleteModalCloseBtn" aria-label="닫기">✕</button>
+      <h2 id="teacherScheduleDeleteModalTitle" class="modal-title">상담 삭제</h2>
+      <p class="modal-subtitle">정말 삭제하시겠습니까? 삭제하면 되돌릴 수 없습니다.</p>
+      <div id="teacherScheduleDeletePreview" class="teacher-delete-preview"></div>
+      <p id="teacherScheduleDeleteMessage" class="modal-message" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" id="teacherScheduleDeleteConfirmBtn" class="btn-primary btn-primary--sm btn-danger">삭제</button>
       </div>
     </section>
   </div>
