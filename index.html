@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리 학교 티쳐톡</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="hero" aria-label="티쳐톡 소개">
+      <div class="hero-blob hero-blob--1" aria-hidden="true"></div>
+      <div class="hero-blob hero-blob--2" aria-hidden="true"></div>
+      <div class="hero-blob hero-blob--3" aria-hidden="true"></div>
+
+      <div class="hero-orbital" aria-hidden="true">
+        <span class="orb orb--a">✉️</span>
+        <span class="orb orb--b">🌿</span>
+        <span class="orb orb--c">💬</span>
+      </div>
+
+      <p class="hero-badge">
+        <span class="icon-inline" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 8.5C20 5.46243 16.4183 3 12 3C7.58172 3 4 5.46243 4 8.5C4 11.5 6.5 13.2 8.5 14.2L9 20H15L15.5 14.2C17.5 13.2 20 11.5 20 8.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M9.5 17.5H14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        선생님과 나를 잇는 따뜻한 연결
+      </p>
+
+      <h1 class="hero-title">
+        티쳐톡 <span class="title-emoji" aria-hidden="true">📩</span>
+      </h1>
+      <p class="hero-lede">
+        고민을 차분히 적어 보내면 선생님께서 확인하고,<br>
+        필요한 만큼 부드럽게 상담을 이어갈 수 있어요.
+      </p>
+      <p class="text-highlight">작은 이야기부터 시작해도 괜찮아요.</p>
+      <p id="heroSchoolName" class="hero-school">우리 학교</p>
+    </header>
+
+    <nav class="main-nav" role="tablist" aria-label="티쳐톡 메인 메뉴">
+      <button type="button" id="mainTabStudentBtn" class="main-nav__tab is-active" role="tab" aria-selected="true" aria-controls="mainPanelStudent">
+        학생 신청
+      </button>
+      <button type="button" id="mainTabTeacherBtn" class="main-nav__tab" role="tab" aria-selected="false" aria-controls="mainPanelTeacher">
+        교사 관리
+      </button>
+    </nav>
+
+    <div class="main-tab-panels">
+      <div id="mainPanelStudent" class="main-tab-panel is-active" role="tabpanel" aria-labelledby="mainTabStudentBtn">
+        <section class="panel is-active" id="studentPanel">
+      <div class="layout-single">
+        <div class="form-focus">
+          <form id="requestForm" class="form-stack" novalidate>
+            <section class="form-card" id="step1Card" aria-label="1단계 기본 정보">
+              <div class="form-card__head">
+                <div>
+                  <p class="kicker">STEP 01</p>
+                  <h2>기본 정보</h2>
+                  <p class="muted">기본 정보를 입력하면 담당 선생님과 상담 일정을 바로 확인할 수 있어요.</p>
+                </div>
+                <div id="step1Badge" class="step-badge" aria-hidden="true">1</div>
+              </div>
+
+              <div class="divider" role="separator"></div>
+
+              <input type="hidden" id="studentClass" value="" autocomplete="off">
+
+              <div class="field-row field-row--4">
+                <label class="field">
+                  <span class="field__label">학년</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">🏫</span>
+                    <select id="studentGrade" required aria-label="학년">
+                      <option value="">학년을 선택하세요</option>
+                    </select>
+                  </div>
+                </label>
+
+                <label class="field">
+                  <span class="field__label">반</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">🚪</span>
+                    <select id="studentClassNumber" disabled aria-label="반">
+                      <option value="">먼저 학년을 선택하세요</option>
+                    </select>
+                  </div>
+                </label>
+
+                <label class="field">
+                  <span class="field__label">번호</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">#</span>
+                    <input type="number" id="studentNumber" min="1" inputmode="numeric" placeholder="출석 번호" required>
+                  </div>
+                </label>
+
+                <label class="field">
+                  <span class="field__label">이름</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">👤</span>
+                    <input type="text" id="studentName" placeholder="실명을 입력해주세요" required>
+                  </div>
+                </label>
+              </div>
+
+              <div id="step1InfoGrid" class="step1-info-grid" hidden>
+                <div id="teacherInfoCard" class="teacher-info-card">
+                  <p class="teacher-info-card__label">담당 선생님</p>
+                  <p id="teacherInfoText" class="teacher-info-card__value">🧑‍🏫</p>
+                </div>
+                <div id="settingInfoCard" class="teacher-info-card">
+                  <p class="teacher-info-card__label">상담 신청 기간</p>
+                  <p id="settingInfoText" class="teacher-info-card__value">📅</p>
+                </div>
+              </div>
+              <select id="teacher" hidden aria-hidden="true" tabindex="-1">
+                <option value="">학년과 반을 선택하면 자동으로 표시됩니다</option>
+              </select>
+
+            </section>
+
+            <section class="form-card" id="step2Card" aria-label="2단계 상담 일정">
+              <div class="form-card__head">
+                <div>
+                  <p class="kicker">STEP 02</p>
+                  <h2>상담 일정</h2>
+                  <p class="muted">상담 신청 기간에만 신청할 수 있으며, 희망 날짜는 담임 선생님이 지정한 상담 가능 일자 중에서만 선택할 수 있어요. 날짜를 고른 뒤 시간 확인을 누르면 예약 현황을 볼 수 있어요.</p>
+                </div>
+                <div id="step2Badge" class="step-badge" aria-hidden="true">2</div>
+              </div>
+
+              <div class="divider" role="separator"></div>
+
+              <div class="schedule-query-row">
+                <label class="field">
+                  <span class="field__label">희망 날짜</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">📅</span>
+                    <select id="requestDate" required aria-label="희망 상담 일자">
+                      <option value="">상담 가능 일자를 선택하세요</option>
+                    </select>
+                  </div>
+                </label>
+
+                <button type="button" id="checkAvailabilityBtn" class="btn-primary btn-primary--sm btn-secondary-tone">
+                  <span class="btn-primary__icon" aria-hidden="true">🔍</span>
+                  <span id="checkAvailabilityBtnText">시간 확인</span>
+                </button>
+
+                <input type="hidden" id="requestTime" required>
+              </div>
+
+              <div id="slotBoard" class="slot-board" aria-live="polite" hidden>
+                <h3 id="slotBoardTitle" class="chipboard__title">담당 선생님 상담 가능 시간</h3>
+                <p id="slotBoardGuide" class="side-text">반과 날짜를 먼저 선택해 주세요.</p>
+                <p id="slotBoardSummary" class="slot-summary"></p>
+                <div id="timeSlotGrid" class="slot-groups"></div>
+              </div>
+            </section>
+
+            <section class="form-card" id="step3Card" aria-label="3단계 상담 내용">
+              <div class="form-card__head">
+                <div>
+                  <p class="kicker">STEP 03</p>
+                  <h2>상담 내용</h2>
+                  <p class="muted">상담이 필요한 내용을 편하게 적어주세요.</p>
+                </div>
+                <div id="step3Badge" class="step-badge" aria-hidden="true">3</div>
+              </div>
+
+              <div class="divider" role="separator"></div>
+
+              <div class="field-row field-row--2">
+                <label class="field">
+                  <span class="field__label">긴급도</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">⚡</span>
+                    <select id="urgency" required>
+                      <option value="">긴급도를 선택하세요</option>
+                      <option value="긴급함">긴급함</option>
+                      <option value="보통" selected>보통</option>
+                      <option value="천천히 가능">천천히 가능</option>
+                    </select>
+                  </div>
+                </label>
+
+                <label class="field">
+                  <span class="field__label">상담 주제</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">🧩</span>
+                    <select id="topic" required>
+                      <option value="">상담 주제를 골라주세요</option>
+                      <option value="진로">진로</option>
+                      <option value="학업">학업</option>
+                      <option value="친구관계">친구관계</option>
+                      <option value="학교생활">학교생활</option>
+                      <option value="정서/가정">정서/가정</option>
+                      <option value="기타">기타</option>
+                    </select>
+                  </div>
+                </label>
+              </div>
+
+              <label class="field" for="message">
+                <div class="field__row">
+                  <span class="field__label">상담 내용</span>
+                  <span class="counter" id="messageCounter" aria-live="polite">0/500</span>
+                </div>
+                <textarea
+                  id="message"
+                  rows="7"
+                  maxlength="500"
+                  placeholder="예) 친구 관계 때문에 고민이 있어요.
+진로 선택이 고민됩니다.
+선생님과 따로 이야기하고 싶어요."
+                  required
+                ></textarea>
+              </label>
+            </section>
+
+            <div class="secure-note" role="note">
+              <span class="icon-inline" aria-hidden="true">🔒</span>
+              <p>
+                상담 내용은 담당 선생님만 확인할 수 있어요.<br>
+                편하게 작성해주세요 😊
+              </p>
+            </div>
+
+            <div class="submit-block submit-block--desktop">
+              <p id="submitMessage" class="submit-message js-submit-message" role="status" aria-live="polite"></p>
+              <button type="submit" class="btn-primary" id="submitButton">
+                <span class="btn-primary__icon" aria-hidden="true">✈️</span>
+                <span>상담 신청하기</span>
+              </button>
+              <p class="foot-note">제출한 내용은 담당 선생님만 확인할 수 있어요.</p>
+            </div>
+          </form>
+        </div>
+      </div>
+        </section>
+      </div>
+
+      <div id="mainPanelTeacher" class="main-tab-panel" role="tabpanel" aria-labelledby="mainTabTeacherBtn" hidden>
+        <div id="teacherPanelAuth" class="teacher-login-shell">
+          <div class="layout-single teacher-login-inner">
+            <section class="form-card form-card--solo teacher-login-card" aria-labelledby="teacherAuthTitle">
+              <div class="form-card__head">
+                <div>
+                  <p class="kicker">교사</p>
+                  <h2 id="teacherAuthTitle">교사 관리</h2>
+                  <p class="muted">담임 선생님 전용 상담 관리 공간입니다.</p>
+                </div>
+              </div>
+              <div class="divider" role="separator"></div>
+              <label class="field" for="teacherLoginIdInput">
+                <span class="field__label">아이디</span>
+                <div class="input-wrap">
+                  <span class="input-icon" aria-hidden="true">👤</span>
+                  <input type="text" id="teacherLoginIdInput" autocomplete="username" placeholder="아이디">
+                </div>
+              </label>
+              <label class="field" for="teacherLoginPasswordInput">
+                <span class="field__label">비밀번호</span>
+                <div class="input-wrap">
+                  <span class="input-icon" aria-hidden="true">🔐</span>
+                  <input type="password" id="teacherLoginPasswordInput" autocomplete="current-password" placeholder="비밀번호">
+                </div>
+              </label>
+              <p id="teacherAuthMessage" class="modal-message teacher-auth-message" aria-live="polite"></p>
+              <div class="submit-block submit-block--inline">
+                <button type="button" id="teacherAuthSubmitBtn" class="btn-primary">로그인</button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div id="teacherPanelDashboard" class="layout-single teacher-panel-dashboard" hidden>
+          <div class="form-stack teacher-panel-dashboard-stack">
+            <section class="form-card teacher-session-card" aria-labelledby="teacherSessionHeading">
+              <div class="form-card__head teacher-session-card__head">
+                <div>
+                  <p class="kicker">세션</p>
+                  <h2 id="teacherSessionHeading">로그인 정보</h2>
+                  <p id="teacherSessionInfo" class="teacher-session-line" aria-live="polite" hidden></p>
+                  <p class="muted teacher-session-hint">로그인되어 있어요. 상담 설정·일정은 아래에서, 비밀번호는 <strong>계정 관리</strong>에서 변경할 수 있습니다.</p>
+                </div>
+                <div class="teacher-session-actions">
+                  <button type="button" id="teacherAccountOpenBtn" class="btn-ghost teacher-session-action-btn">계정 관리</button>
+                  <button type="button" id="teacherLogoutBtn" class="btn-ghost teacher-session-action-btn">로그아웃</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="form-card" id="teacherCardSettings" aria-labelledby="teacherCardSettingsTitle">
+              <div class="form-card__head">
+                <div>
+                  <p class="kicker">설정</p>
+                  <h2 id="teacherCardSettingsTitle">상담 설정 관리</h2>
+                  <p class="muted">담임 학급 기준으로 상담 신청 기간과 상담 가능 일정을 설정합니다.</p>
+                </div>
+              </div>
+              <div class="divider" role="separator"></div>
+              <p id="settingTeacherInfo" class="teacher-setting-info">담임 정보가 여기에 표시됩니다.</p>
+
+              <section class="setting-section teacher-setting-section">
+                <h4 class="setting-section__title">상담 신청 기간 설정</h4>
+                <p class="muted">학생이 상담을 신청할 수 있는 기간입니다.</p>
+                <div class="field-row field-row--2">
+                  <label class="field" for="settingApplyStart">
+                    <span class="field__label">신청 시작일</span>
+                    <div class="input-wrap">
+                      <span class="input-icon" aria-hidden="true">📅</span>
+                      <input type="date" id="settingApplyStart">
+                    </div>
+                  </label>
+                  <label class="field" for="settingApplyEnd">
+                    <span class="field__label">신청 종료일</span>
+                    <div class="input-wrap">
+                      <span class="input-icon" aria-hidden="true">📅</span>
+                      <input type="date" id="settingApplyEnd">
+                    </div>
+                  </label>
+                </div>
+              </section>
+
+              <section class="setting-section teacher-setting-section">
+                <h4 class="setting-section__title">상담 기간 설정</h4>
+                <p class="muted">달력에서 날짜를 선택한 뒤, 아래에서 <strong>그날</strong> 상담 가능 시간을 선택합니다. 날짜마다 다른 시간을 설정할 수 있습니다.</p>
+                <p id="settingTimeSelectionHint" class="hint" aria-live="polite">달력에서 날짜를 먼저 선택해 주세요.</p>
+                <button type="button" id="settingRemoveDateBtn" class="btn-ghost teacher-setting-remove-date" hidden>선택한 날짜에서 상담 일정 삭제</button>
+                <label class="field" for="settingDateGrid">
+                  <span class="field__label">상담 가능 일자</span>
+                  <div class="setting-calendar">
+                    <div class="setting-calendar__toolbar">
+                      <button type="button" id="settingPrevMonthBtn" class="calendar-nav" aria-label="이전 달">‹</button>
+                      <p id="settingCalendarMonthLabel" class="setting-calendar__month">2026년 4월</p>
+                      <button type="button" id="settingNextMonthBtn" class="calendar-nav" aria-label="다음 달">›</button>
+                    </div>
+                    <div class="setting-calendar__weekdays">
+                      <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                    </div>
+                    <div id="settingDateGrid" class="setting-calendar__grid"></div>
+                  </div>
+                </label>
+                <div class="field">
+                  <span class="field__label">선택한 날짜의 상담 가능 시간</span>
+                  <div id="settingTimeGrid" class="slot-grid slot-grid--setting"></div>
+                </div>
+              </section>
+              <p id="teacherSettingsMessage" class="modal-message" aria-live="polite"></p>
+              <div class="submit-block submit-block--inline">
+                <button type="button" id="saveTeacherSettingsBtn" class="btn-primary">
+                  <span class="btn-primary__icon" aria-hidden="true">💾</span>
+                  <span id="saveTeacherSettingsBtnText">설정 저장</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="form-card" id="teacherCardSchedule" aria-labelledby="teacherCardScheduleTitle">
+              <div class="form-card__head teacher-schedule-card-head">
+                <div>
+                  <p class="kicker">일정</p>
+                  <h2 id="teacherCardScheduleTitle">상담 일정 관리</h2>
+                  <p class="muted">달력에서 날짜를 선택하면 해당 일자의 상담 신청을 확인할 수 있습니다.</p>
+                </div>
+                <button type="button" id="teacherScheduleRefreshBtn" class="btn-ghost teacher-schedule-refresh-btn">새로고침</button>
+              </div>
+              <div class="divider" role="separator"></div>
+              <div class="teacher-schedule-layout teacher-schedule-layout--card">
+                <div class="teacher-schedule-calendar-card">
+                  <div class="teacher-schedule-toolbar">
+                    <button type="button" id="teacherSchedulePrevMonthBtn" class="calendar-nav" aria-label="이전 달">‹</button>
+                    <p id="teacherScheduleMonthLabel" class="teacher-schedule-month">2026년 4월</p>
+                    <button type="button" id="teacherScheduleNextMonthBtn" class="calendar-nav" aria-label="다음 달">›</button>
+                  </div>
+                  <div class="teacher-schedule-weekdays">
+                    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                  </div>
+                  <div id="teacherScheduleCalendarGrid" class="teacher-schedule-grid"></div>
+                </div>
+                <div class="teacher-schedule-list-card">
+                  <h4 id="teacherScheduleSelectedDateTitle" class="teacher-schedule-list-title">날짜를 선택해 주세요</h4>
+                  <p id="teacherScheduleListHint" class="teacher-schedule-list-hint">상담이 있는 날짜를 선택하면 해당 일자의 신청 목록을 확인할 수 있습니다.</p>
+                  <div id="teacherScheduleList" class="teacher-schedule-list"></div>
+                </div>
+              </div>
+              <section id="teacherScheduleDetailCard" class="teacher-schedule-detail-card teacher-schedule-detail-card--embedded" hidden>
+                <h5 class="teacher-schedule-detail-title">상담 상세</h5>
+                <div id="teacherScheduleDetailContent" class="teacher-schedule-detail-content"></div>
+                <div class="field teacher-schedule-status-field">
+                  <span class="field__label">처리 상태</span>
+                  <div class="input-wrap">
+                    <span class="input-icon" aria-hidden="true">✅</span>
+                    <select id="teacherScheduleStatusSelect">
+                      <option value="처리안됨">처리안됨</option>
+                      <option value="확인중">확인중</option>
+                      <option value="완료">완료</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="submit-block submit-block--inline">
+                  <button type="button" id="saveTeacherScheduleStatusBtn" class="btn-primary btn-primary--sm">상태 저장</button>
+                </div>
+                <p id="teacherScheduleStatusMessage" class="modal-message" aria-live="polite"></p>
+              </section>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="teacherAccountModal" class="modal-backdrop" hidden aria-hidden="true">
+    <section class="modal-card modal-card--sm teacher-account-modal-card" role="dialog" aria-modal="true" aria-labelledby="teacherAccountModalTitle">
+      <button type="button" class="modal-close" id="teacherAccountModalCloseBtn" aria-label="닫기">✕</button>
+      <h2 id="teacherAccountModalTitle" class="modal-title">계정 관리</h2>
+      <p class="modal-subtitle">비밀번호를 변경하려면 현재 비밀번호와 새 비밀번호를 입력한 뒤 저장하세요.</p>
+      <label class="field" for="currentTeacherPasswordInput">
+        <span class="field__label">현재 비밀번호</span>
+        <div class="input-wrap">
+          <span class="input-icon" aria-hidden="true">🔐</span>
+          <input type="password" id="currentTeacherPasswordInput" autocomplete="current-password" placeholder="현재 비밀번호">
+        </div>
+      </label>
+      <label class="field" for="newTeacherPasswordInput">
+        <span class="field__label">새 비밀번호</span>
+        <div class="input-wrap">
+          <span class="input-icon" aria-hidden="true">✨</span>
+          <input type="password" id="newTeacherPasswordInput" autocomplete="new-password" placeholder="새 비밀번호">
+        </div>
+      </label>
+      <label class="field" for="confirmTeacherPasswordInput">
+        <span class="field__label">새 비밀번호 확인</span>
+        <div class="input-wrap">
+          <span class="input-icon" aria-hidden="true">✨</span>
+          <input type="password" id="confirmTeacherPasswordInput" autocomplete="new-password" placeholder="새 비밀번호 확인">
+        </div>
+      </label>
+      <p id="teacherPasswordChangeMessage" class="modal-message" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" id="saveTeacherPasswordBtn" class="btn-primary btn-primary--sm">비밀번호 저장</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="submit-dock" id="submitDock" data-submit-dock role="region" aria-label="상담 신청 제출">
+    <p class="submit-message submit-message--dock js-submit-message" role="status" aria-live="polite"></p>
+    <button type="submit" class="btn-primary" form="requestForm" id="submitButtonDock" aria-label="상담 신청하기">
+      <span class="btn-primary__icon" aria-hidden="true">✈️</span>
+      <span>상담 신청하기</span>
+    </button>
+    <p class="foot-note">제출한 내용은 담당 선생님만 확인할 수 있어요.</p>
+  </div>
+
+  <script src="school-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
