@@ -1,22 +1,6 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRD5PKwZPEfwPORp_WJWnsdM5QSI9_AvAAwhQ4q92iDyAGksIQlsV9Ll5tqA8_Llw/exec";
 const CONFIG = getSchoolConfig();
-/** 교사계정 시트(getHomeroomRoster)에서 채움 */
-let homeroomTeachers = CONFIG.classes.slice();
-
-async function refreshHomeroomTeachersFromSheet() {
-  try {
-    const u = new URL(GOOGLE_SCRIPT_URL);
-    u.searchParams.set("action", "getHomeroomRoster");
-    u.searchParams.set("t", String(Date.now()));
-    const response = await fetch(u.toString());
-    const data = await response.json();
-    if (data.success && Array.isArray(data.classes)) {
-      homeroomTeachers = data.classes.filter((item) => item && item.className && item.teacher);
-    }
-  } catch (err) {
-    console.error("refreshHomeroomTeachersFromSheet", err);
-  }
-}
+const HOMEROOM_TEACHERS = CONFIG.classes;
 const TIME_SLOTS = [
   "07:30", "08:00", "12:30", "13:00", "15:30", "16:00", "16:30", "17:00",
   "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00",
@@ -187,19 +171,16 @@ const teacherSession = {
   token: "",
 };
 
-void (async function bootstrapHomeroomAndUi() {
-  await refreshHomeroomTeachersFromSheet();
-  initStep1GradeClassSelectors();
-  addTeacherOptions();
-  setSchoolName();
-  applyDateInputBySettings(null);
-  setDefaultUrgency();
-  initMessageCounter();
-  resetSlotBoardBeforeCheck();
-  updateStepProgress();
-  initializeTeacherSettingsUI();
-  initializeStudentCalendarUI();
-})();
+initStep1GradeClassSelectors();
+addTeacherOptions();
+setSchoolName();
+applyDateInputBySettings(null);
+setDefaultUrgency();
+initMessageCounter();
+resetSlotBoardBeforeCheck();
+updateStepProgress();
+initializeTeacherSettingsUI();
+initializeStudentCalendarUI();
 
 if (fields.grade) {
   fields.grade.addEventListener("change", async () => {
@@ -886,7 +867,7 @@ function updateTeacherSessionDisplay() {
     teacherSessionClassText.textContent = `🏫 ${klass || "학급 미지정"}`;
   }
   if (teacherSessionTeacherText) {
-    teacherSessionTeacherText.textContent = `🧑‍🏫 ${formatTeacherHonorific(name)}`;
+    teacherSessionTeacherText.textContent = `🧑‍🏫 ${name}선생님`;
   }
   teacherSessionInfo.hidden = false;
 }
@@ -919,7 +900,7 @@ async function applyTeacherSessionToSettings() {
     const name = String(teacherSession.teacherName || "").trim();
     const klass = String(teacherSession.className || "").trim();
     settingTeacherInfo.textContent =
-      teacherLine || formatHomeroomTeacherLine(klass, name) || formatTeacherHonorific(name) || DEFAULT_SETTING_MESSAGE;
+      teacherLine || (klass ? `${name} 선생님 · ${klass}` : `${name} 선생님`);
   }
 
   await loadTeacherSettingsToModal();
@@ -1970,28 +1951,9 @@ function renderSettingCalendar() {
   }
 }
 
-/** 교사계정 시트의 짧은 이름 → "OOO 선생님" (띄어쓰기 포함) */
-function formatTeacherHonorific(shortName) {
-  const n = String(shortName || "").trim();
-  if (!n) {
-    return "";
-  }
-  return `${n} 선생님`;
-}
-
-/** getHomeroomRoster와 동일: "2학년 1반 이왕혁 선생님" */
-function formatHomeroomTeacherLine(className, shortTeacherName) {
-  const cn = String(className || "").trim();
-  const n = String(shortTeacherName || "").trim();
-  if (!cn || !n) {
-    return "";
-  }
-  return `${cn} ${n} 선생님`;
-}
-
 function getTeacherFromGradeClass(grade, classNumber) {
   const className = `${grade}학년 ${classNumber}반`;
-  const found = homeroomTeachers.find((item) => item.className === className);
+  const found = HOMEROOM_TEACHERS.find((item) => item.className === className);
   return found ? found.teacher : "";
 }
 
@@ -2108,10 +2070,7 @@ async function handleTeacherSettingsSave() {
   const className = String(teacherSession.className || "").trim();
   const fromConfig = getTeacherFromGradeClass(grade, classNumber);
   const sessionName = String(teacherSession.teacherName || "").trim();
-  let teacher =
-    fromConfig ||
-    formatHomeroomTeacherLine(className, sessionName) ||
-    (sessionName ? formatTeacherHonorific(sessionName) : "");
+  let teacher = fromConfig || (sessionName ? `${sessionName} 선생님` : "");
   if (!String(teacher || "").trim()) {
     const tid = String(teacherSession.teacherId || "").trim();
     teacher = tid ? `${tid} 담임` : "담임";
@@ -2274,7 +2233,7 @@ function collectRequestData() {
 
 function getDistinctGradesFromConfig() {
   const grades = new Set();
-  homeroomTeachers.forEach((item) => {
+  HOMEROOM_TEACHERS.forEach((item) => {
     const matched = String(item.className || "").match(/^(\d)\s*학년/);
     if (matched) {
       grades.add(matched[1]);
@@ -2289,7 +2248,7 @@ function getClassNumbersForGrade(grade) {
     return [];
   }
   const re = new RegExp(`^${g}\\s*학년\\s*(\\d{1,2})\\s*반$`);
-  const nums = homeroomTeachers.map((item) => {
+  const nums = HOMEROOM_TEACHERS.map((item) => {
     const m = String(item.className || "").match(re);
     return m ? Number(m[1]) : null;
   }).filter((n) => n != null);
@@ -2310,7 +2269,7 @@ function syncHiddenStudentClassFromSelectors() {
     return;
   }
   const cn = buildClassNameFromGradeAndClassNumber(fields.grade.value, fields.classNumber.value);
-  const valid = Boolean(cn && homeroomTeachers.some((item) => item.className === cn));
+  const valid = Boolean(cn && HOMEROOM_TEACHERS.some((item) => item.className === cn));
   fields.className.value = valid ? cn : "";
 }
 
@@ -2401,7 +2360,7 @@ function applyStoredClassNameToStep1Selectors(className) {
   fields.grade.value = gr;
   populateClassNumberSelectForGrade(gr);
   fields.classNumber.value = num;
-  fields.className.value = homeroomTeachers.some((item) => item.className === canonical) ? canonical : "";
+  fields.className.value = HOMEROOM_TEACHERS.some((item) => item.className === canonical) ? canonical : "";
   updateTeacherByClass();
   updateTeacherInfoCard();
 }
@@ -2416,7 +2375,7 @@ function addTeacherOptions() {
     return;
   }
   fields.teacher.innerHTML = `<option value="">학년과 반을 선택하면 자동으로 표시됩니다</option>`;
-  homeroomTeachers.forEach((item) => {
+  HOMEROOM_TEACHERS.forEach((item) => {
     const option = document.createElement("option");
     option.value = item.teacher;
     option.textContent = item.teacher;
@@ -2428,7 +2387,7 @@ function updateTeacherByClass() {
   if (!fields.className || !fields.teacher) {
     return;
   }
-  const homeroom = homeroomTeachers.find((item) => item.className === fields.className.value);
+  const homeroom = HOMEROOM_TEACHERS.find((item) => item.className === fields.className.value);
   fields.teacher.value = homeroom ? homeroom.teacher : "";
 }
 
@@ -3423,7 +3382,10 @@ async function sendToGoogleSheets(requestData) {
 function restoreFrequentFields(requestData) {
   applyStoredClassNameToStep1Selectors(requestData.className || "");
   if (fields.teacher) {
-    fields.teacher.value = requestData.teacher || "";
+    updateTeacherByClass();
+    if (!fields.teacher.value && requestData.teacher) {
+      fields.teacher.value = requestData.teacher;
+    }
   }
   const restoredClass = String(fields.className ? fields.className.value : "").trim();
   if (restoredClass && studentSettingsCache[restoredClass]) {
