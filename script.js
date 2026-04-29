@@ -1,4 +1,4 @@
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-b22QoFKlv7DHjz-6bIGuIE_u2pyjFVqbn-vKHchSJdBo8LhBmQnC3v7GeK2n4p23/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRD5PKwZPEfwPORp_WJWnsdM5QSI9_AvAAwhQ4q92iDyAGksIQlsV9Ll5tqA8_Llw/exec";
 const CONFIG = getSchoolConfig();
 const HOMEROOM_TEACHERS = CONFIG.classes;
 const TIME_SLOTS = [
@@ -8,9 +8,7 @@ const TIME_SLOTS = [
 
 const form = document.querySelector("#requestForm");
 const submitButtonPrimary = document.querySelector("#submitButton");
-const submitButtonDock = document.querySelector("#submitButtonDock");
 const submitMessages = document.querySelectorAll(".js-submit-message");
-const submitDock = document.querySelector("#submitDock");
 const heroSchoolName = document.querySelector("#heroSchoolName");
 const messageCounter = document.querySelector("#messageCounter");
 const slotBoard = document.querySelector("#slotBoard");
@@ -97,6 +95,9 @@ const teacherScheduleDeleteModalCloseBtn = document.querySelector("#teacherSched
 const teacherScheduleDeletePreview = document.querySelector("#teacherScheduleDeletePreview");
 const teacherScheduleDeleteMessage = document.querySelector("#teacherScheduleDeleteMessage");
 const teacherScheduleDeleteConfirmBtn = document.querySelector("#teacherScheduleDeleteConfirmBtn");
+const studentRequestCompleteModal = document.querySelector("#studentRequestCompleteModal");
+const studentRequestCompleteModalCloseBtn = document.querySelector("#studentRequestCompleteModalCloseBtn");
+const studentRequestCompleteModalOkBtn = document.querySelector("#studentRequestCompleteModalOkBtn");
 
 const fields = {
   teacher: document.querySelector("#teacher"),
@@ -176,12 +177,10 @@ setSchoolName();
 applyDateInputBySettings(null);
 setDefaultUrgency();
 initMessageCounter();
-updateSubmitDock();
 resetSlotBoardBeforeCheck();
 updateStepProgress();
 initializeTeacherSettingsUI();
 initializeStudentCalendarUI();
-window.addEventListener("resize", updateSubmitDock);
 
 if (fields.grade) {
   fields.grade.addEventListener("change", async () => {
@@ -306,7 +305,8 @@ if (form) {
       restoreFrequentFields(requestData);
       setDefaultUrgency();
       updateMessageCounter();
-      showMessage("상담 신청이 접수되었습니다 😊");
+      showMessage("");
+      openStudentRequestCompleteModal();
       void renderTimeSlotBoard({ forceFetch: true });
       updateStepProgress();
       if (fields.name) {
@@ -475,11 +475,28 @@ function initializeTeacherSettingsUI() {
       }
     });
   }
+  if (studentRequestCompleteModalCloseBtn) {
+    studentRequestCompleteModalCloseBtn.addEventListener("click", () => closeStudentRequestCompleteModal());
+  }
+  if (studentRequestCompleteModalOkBtn) {
+    studentRequestCompleteModalOkBtn.addEventListener("click", () => closeStudentRequestCompleteModal());
+  }
+  if (studentRequestCompleteModal) {
+    studentRequestCompleteModal.addEventListener("click", (event) => {
+      if (event.target === studentRequestCompleteModal) {
+        closeStudentRequestCompleteModal();
+      }
+    });
+  }
   if (teacherSchedulePrintDownloadBtn) {
     teacherSchedulePrintDownloadBtn.addEventListener("click", handleTeacherSchedulePdfDownload);
   }
   window.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") {
+      return;
+    }
+    if (isStudentRequestCompleteModalOpen()) {
+      closeStudentRequestCompleteModal();
       return;
     }
     if (isTeacherAccountModalOpen()) {
@@ -502,6 +519,30 @@ function initializeTeacherSettingsUI() {
       setMainTab("student");
     }
   });
+}
+
+function isStudentRequestCompleteModalOpen() {
+  return Boolean(studentRequestCompleteModal && !studentRequestCompleteModal.hidden);
+}
+
+function openStudentRequestCompleteModal() {
+  if (!studentRequestCompleteModal) {
+    return;
+  }
+  studentRequestCompleteModal.hidden = false;
+  studentRequestCompleteModal.setAttribute("aria-hidden", "false");
+  const focusTarget = studentRequestCompleteModalOkBtn || studentRequestCompleteModalCloseBtn;
+  if (focusTarget && typeof focusTarget.focus === "function") {
+    window.requestAnimationFrame(() => focusTarget.focus());
+  }
+}
+
+function closeStudentRequestCompleteModal() {
+  if (!studentRequestCompleteModal) {
+    return;
+  }
+  studentRequestCompleteModal.hidden = true;
+  studentRequestCompleteModal.setAttribute("aria-hidden", "true");
 }
 
 function isTeacherAccountModalOpen() {
@@ -705,7 +746,6 @@ function syncTeacherMainPanels() {
     teacherDashboardEl.hidden = false;
     teacherDashboardEl.setAttribute("aria-hidden", "false");
   }
-  updateSubmitDock();
 }
 
 function setMainTab(tab) {
@@ -746,8 +786,6 @@ function setMainTab(tab) {
       syncTeacherMainPanels();
     }
   }
-
-  updateSubmitDock();
 }
 
 function showTeacherLoginView(options = {}) {
@@ -3403,31 +3441,14 @@ function updateMessageCounter() {
   messageCounter.textContent = `${fields.message.value.length}/${maxLength}`;
 }
 
-function updateSubmitDock() {
-  if (!submitDock) {
-    return;
-  }
-  if (activeMainTab !== "student") {
-    submitDock.setAttribute("hidden", "");
-    return;
-  }
-  const isMobile = window.matchMedia("(max-width: 640px)").matches;
-  if (!isMobile) {
-    submitDock.setAttribute("hidden", "");
-    return;
-  }
-  submitDock.removeAttribute("hidden");
-}
-
 function setSubmitting(isSubmitting) {
   const label = isSubmitting ? "접수 중..." : "상담 신청하기";
   if (submitButtonPrimary) {
     submitButtonPrimary.disabled = isSubmitting;
-    submitButtonPrimary.querySelector("span:last-child").textContent = label;
-  }
-  if (submitButtonDock) {
-    submitButtonDock.disabled = isSubmitting;
-    submitButtonDock.querySelector("span:last-child").textContent = label;
+    const labelSpan = submitButtonPrimary.querySelector("span:last-child");
+    if (labelSpan) {
+      labelSpan.textContent = label;
+    }
   }
 }
 

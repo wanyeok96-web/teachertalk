@@ -375,7 +375,7 @@
                 <label class="field" for="settingDateGrid">
                   <div class="field__row field__row--inline-actions">
                     <span class="field__label">상담 가능 일자</span>
-                    <button type="button" id="settingRemoveDateBtn" class="btn-ghost btn-ghost--xs teacher-setting-remove-date" hidden>선택한 날짜에서 상담 일정 삭제</button>
+                    <button type="button" id="settingRemoveDateBtn" class="btn-ghost btn-ghost--xs teacher-setting-remove-date" hidden>선택한 날짜 삭제</button>
                   </div>
                   <div class="setting-calendar">
                     <div class="setting-calendar__toolbar">
@@ -541,13 +541,15 @@
     </section>
   </div>
 
-  <div class="submit-dock" id="submitDock" data-submit-dock role="region" aria-label="상담 신청 제출">
-    <p class="submit-message submit-message--dock js-submit-message" role="status" aria-live="polite"></p>
-    <button type="submit" class="btn-primary" form="requestForm" id="submitButtonDock" aria-label="상담 신청하기">
-      <span class="btn-primary__icon" aria-hidden="true">✈️</span>
-      <span>상담 신청하기</span>
-    </button>
-    <p class="foot-note">제출한 내용은 담당 선생님만 확인할 수 있어요.</p>
+  <div id="studentRequestCompleteModal" class="modal-backdrop" hidden aria-hidden="true">
+    <section class="modal-card modal-card--sm" role="dialog" aria-modal="true" aria-labelledby="studentRequestCompleteModalTitle">
+      <button type="button" class="modal-close" id="studentRequestCompleteModalCloseBtn" aria-label="닫기">✕</button>
+      <h2 id="studentRequestCompleteModalTitle" class="modal-title">상담 신청이 완료되었습니다.👌</h2>
+      <p class="modal-subtitle">담임선생님께 별도로 말씀드려 주세요.😊</p>
+      <div class="modal-actions">
+        <button type="button" id="studentRequestCompleteModalOkBtn" class="btn-primary btn-primary--sm">확인</button>
+      </div>
+    </section>
   </div>
 
   <script src="school-config.js"></script>
